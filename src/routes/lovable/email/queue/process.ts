@@ -1,5 +1,6 @@
 import { sendLovableEmail } from '@lovable.dev/email-js'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as _createClient } from '@supabase/supabase-js'
+const createClient = _createClient as unknown as (url: string, key: string) => any
 import { createFileRoute } from '@tanstack/react-router'
 
 const MAX_RETRIES = 5
