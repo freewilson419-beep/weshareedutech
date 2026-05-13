@@ -65,7 +65,7 @@ function PublicationHome() {
   const rest = items.slice(1);
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/10">
+    <div className="min-h-screen overflow-x-hidden bg-background selection:bg-primary/10">
       <header className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-8">
         <Link to="/" className="transition-opacity hover:opacity-80">
           <Logo className="h-8 w-auto text-primary" />
@@ -101,7 +101,7 @@ function PublicationHome() {
               Now open for every participant
             </div>
 
-            <h1 className="mb-8 text-5xl font-extrabold leading-[1.1] tracking-normal text-foreground md:text-7xl">
+            <h1 className="mb-8 text-4xl font-extrabold leading-[1.1] tracking-normal text-foreground sm:text-5xl md:text-7xl">
               Learn by <span className="text-primary">sharing</span>.<br />
               Read what others publish.
             </h1>
@@ -216,13 +216,13 @@ function PublicationHome() {
 function FeaturedCard({ item }: { item: FeedItem }) {
   return (
     <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
-      <article className="grid gap-8 overflow-hidden rounded-2xl border bg-card shadow-sm md:grid-cols-2">
+      <article className="grid gap-6 overflow-hidden rounded-2xl border bg-card shadow-sm md:grid-cols-2 md:gap-8">
         {item.cover_image_url ? (
-          <div className="aspect-[4/3] overflow-hidden bg-muted md:aspect-auto">
+          <div className="aspect-[16/9] overflow-hidden bg-muted md:aspect-auto">
             <img src={item.cover_image_url} alt={item.title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
           </div>
         ) : (
-          <div className="aspect-[4/3] bg-primary/10 md:aspect-auto" />
+          <div className="aspect-[16/9] bg-primary/10 md:aspect-auto" />
         )}
         <div className="flex flex-col justify-center p-8 md:p-10">
           <Badge className="mb-4 w-fit">Featured</Badge>
@@ -240,11 +240,11 @@ function ArticleCard({ item }: { item: FeedItem }) {
     <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
       <article className="h-full overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
         {item.cover_image_url ? (
-          <div className="aspect-[16/10] overflow-hidden bg-muted">
+          <div className="aspect-[16/9] overflow-hidden bg-muted sm:aspect-[16/10]">
             <img src={item.cover_image_url} alt={item.title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
           </div>
         ) : (
-          <div className="aspect-[16/10] bg-primary/10" />
+          <div className="aspect-[16/9] bg-primary/10 sm:aspect-[16/10]" />
         )}
         <div className="p-6">
           <div className="mb-3 flex flex-wrap gap-1.5">

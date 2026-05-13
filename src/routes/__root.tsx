@@ -73,7 +73,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" },
       { title: "WeShare EduTeach — Share what you know" },
       { name: "description", content: "WeShare EduTeach is a learning publication where participants read structured lessons freely and sign in to publish, comment, clap and bookmark." },
       { property: "og:title", content: "WeShare EduTeach — Share what you know" },
