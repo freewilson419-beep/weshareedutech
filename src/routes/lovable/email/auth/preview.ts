@@ -56,7 +56,7 @@ const SAMPLE_DATA: Record<string, object> = {
     confirmationUrl: SAMPLE_PROJECT_URL,
   },
   reauthentication: {
-    token: '12345678',
+    token: '123456',
   },
 }
 
