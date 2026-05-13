@@ -108,7 +108,7 @@ function ArticleView() {
         setLoading(false);
         return;
       }
-      setPost(p as Post);
+      setPost(p as unknown as Post);
 
       // record view
       supabase.from("lesson_views").insert({
