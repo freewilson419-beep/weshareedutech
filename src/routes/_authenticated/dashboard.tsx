@@ -74,7 +74,7 @@ function Dashboard() {
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_user_id", user.id).is("published_at", null),
         supabase.from("posts").select("id,slug,title,published_at,updated_at").eq("author_user_id", user.id).order("updated_at", { ascending: false }).limit(5),
         supabase.from("bookmarks").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("profiles").select("username,surname,title").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("username,surname,title,interest_tags").eq("user_id", user.id).maybeSingle(),
       ]);
 
       let views = 0;
@@ -156,6 +156,27 @@ function Dashboard() {
           .in("id", topIds)
           .not("published_at", "is", null);
         setTrending(await decorate(tRows));
+      }
+
+      // For You — overlap of interest tags + bookmarked tags
+      const { data: bms } = await supabase.from("bookmarks").select("post_id").eq("user_id", user.id).limit(50);
+      const bmIds = (bms ?? []).map((b) => b.post_id);
+      const { data: bmPosts } = bmIds.length
+        ? await supabase.from("posts").select("tags").in("id", bmIds)
+        : { data: [] as { tags: string[] }[] };
+      const tagSet = new Set<string>([...((profile as any)?.interest_tags ?? [])]);
+      (bmPosts ?? []).forEach((p) => (p.tags ?? []).forEach((t) => tagSet.add(t)));
+      const tagList = Array.from(tagSet).slice(0, 20);
+      if (tagList.length) {
+        const { data: fyRows } = await supabase
+          .from("posts")
+          .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
+          .not("published_at", "is", null)
+          .neq("author_user_id", user.id)
+          .overlaps("tags", tagList)
+          .order("published_at", { ascending: false })
+          .limit(4);
+        setForYou(await decorate(fyRows));
       }
     })();
   }, [user]);
@@ -258,6 +279,19 @@ function Dashboard() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {trending.map((item) => <FeedCard key={item.id} item={item} />)}
+          </div>
+        </section>
+      )}
+
+      {/* For you */}
+      {forYou.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-rose-500"><Heart className="mr-1 inline h-3 w-3" /> Picked for you</p>
+            <h2 className="font-serif text-2xl md:text-3xl">Based on your interests</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {forYou.map((item) => <FeedCard key={item.id} item={item} />)}
           </div>
         </section>
       )}
