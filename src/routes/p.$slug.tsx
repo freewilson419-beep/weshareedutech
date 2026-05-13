@@ -290,12 +290,15 @@ function ArticleView() {
   );
 }
 
-function Section({ label, body }: { label: string; body: string }) {
-  if (!body?.trim()) return null;
+function Section({ label, body, media }: { label: string; body: string; media?: MediaItem[] }) {
+  const hasBody = !!body?.trim();
+  const hasMedia = !!media?.length;
+  if (!hasBody && !hasMedia) return null;
   return (
     <section>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
-      <div className="mt-3 whitespace-pre-wrap">{body}</div>
+      {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
+      {hasMedia && <MediaRender items={media!} />}
     </section>
   );
 }
