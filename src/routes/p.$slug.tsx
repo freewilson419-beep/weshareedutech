@@ -229,11 +229,11 @@ function ArticleView() {
 
         <div className="prose-article mt-12 space-y-12 text-[1.075rem] leading-relaxed">
           <Section label="Goal" body={post.goal} />
-          <Section label="Introduction" body={post.intro_slide} />
-          <Section label="Body" body={post.body_slide} />
-          <Section label="Conclusion" body={post.conclusion_slide} />
-          <Section label="Reflection" body={post.reflection} />
-          <Section label="Learn to teach" body={post.learn_to_teach} />
+          <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
+          <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
+          <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
+          <Section label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
+          <Section label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
         </div>
 
         {post.quiz_url && (
