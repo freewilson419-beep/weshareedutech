@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -58,9 +58,16 @@ export const Route = createFileRoute("/")({
 });
 
 function PublicationHome() {
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [authLoading, session, navigate]);
 
   useEffect(() => {
     (async () => {
