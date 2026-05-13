@@ -297,6 +297,7 @@ export type Database = {
           goal: string
           id: string
           intro_slide: string
+          is_anonymous: boolean
           learn_to_teach: string
           published_at: string | null
           quiz_url: string
@@ -318,6 +319,7 @@ export type Database = {
           goal?: string
           id?: string
           intro_slide?: string
+          is_anonymous?: boolean
           learn_to_teach?: string
           published_at?: string | null
           quiz_url?: string
@@ -339,6 +341,7 @@ export type Database = {
           goal?: string
           id?: string
           intro_slide?: string
+          is_anonymous?: boolean
           learn_to_teach?: string
           published_at?: string | null
           quiz_url?: string
@@ -355,11 +358,14 @@ export type Database = {
       profiles: {
         Row: {
           affiliation: string
+          avatar_url: string
           control_number: string
           created_at: string
+          default_anonymous: boolean
           department: string
           email: string
           id: string
+          interest_tags: string[]
           is_complete: boolean
           othernames: string
           phone_number: string
@@ -372,11 +378,14 @@ export type Database = {
         }
         Insert: {
           affiliation?: string
+          avatar_url?: string
           control_number?: string
           created_at?: string
+          default_anonymous?: boolean
           department?: string
           email?: string
           id?: string
+          interest_tags?: string[]
           is_complete?: boolean
           othernames?: string
           phone_number?: string
@@ -389,11 +398,14 @@ export type Database = {
         }
         Update: {
           affiliation?: string
+          avatar_url?: string
           control_number?: string
           created_at?: string
+          default_anonymous?: boolean
           department?: string
           email?: string
           id?: string
+          interest_tags?: string[]
           is_complete?: boolean
           othernames?: string
           phone_number?: string
@@ -432,6 +444,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      reading_progress: {
+        Row: {
+          id: string
+          post_id: string
+          progress_pct: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          progress_pct?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          progress_pct?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
