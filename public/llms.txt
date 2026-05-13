@@ -1,0 +1,13 @@
+# WeShare EduTech
+
+> A community learning publication where participants publish structured lessons that everyone can read freely. Sign in to publish, comment, clap, and bookmark.
+
+## Pages
+
+- [Home](/): Browse the latest published lessons.
+- [Sign in](/login): Sign in to your account.
+- [Get started](/signup): Create a free account to publish and engage.
+
+## Optional
+
+- [Reset password](/reset-password): Recover access to your account.

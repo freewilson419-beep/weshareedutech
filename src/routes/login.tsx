@@ -10,7 +10,17 @@ import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in — WeShare EduTech" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — WeShare EduTech" },
+      { name: "description", content: "Sign in to your WeShare EduTech account to publish lessons, comment, clap, and bookmark." },
+      { property: "og:title", content: "Sign in — WeShare EduTech" },
+      { property: "og:description", content: "Sign in to your WeShare EduTech account." },
+      { property: "og:url", content: "https://weshareeduteach.name.ng/login" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://weshareeduteach.name.ng/login" }],
+  }),
   component: LoginPage,
 });
 
