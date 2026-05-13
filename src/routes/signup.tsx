@@ -57,13 +57,13 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("We sent a 6-digit code to your email");
+    toast.success("We sent a verification code to your email");
     setStep("verify");
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length !== 6) return toast.error("Enter the 6-digit code");
+    if (code.length !== 8) return toast.error("Enter the 8-digit code");
     setLoading(true);
     const { data, error } = await supabase.auth.verifyOtp({ email: form.email, token: code, type: "email" });
     if (error || !data.user) {
@@ -90,12 +90,12 @@ function SignupPage() {
 
   if (step === "verify") {
     return (
-      <AuthShell title="Verify your email" subtitle={`Enter the 6-digit code sent to ${form.email}`}>
+      <AuthShell title="Verify your email" subtitle={`Enter the 8-digit code sent to ${form.email}`}>
         <form onSubmit={handleVerify} className="space-y-6">
           <div className="flex justify-center">
-            <InputOTP maxLength={6} value={code} onChange={setCode}>
+            <InputOTP maxLength={8} value={code} onChange={setCode}>
               <InputOTPGroup>
-                {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} />)}
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <InputOTPSlot key={i} index={i} />)}
               </InputOTPGroup>
             </InputOTP>
           </div>

@@ -1,24 +1,23 @@
+## What’s wrong
+The email template is displaying the auth provider’s actual verification token, and your screenshot shows it is currently **8 digits**. The signup page was hardcoded to ask for **6 digits**, so users receive a valid code that the web form refuses to accept.
+
 ## Plan
+1. **Update the signup verification form to match the real code length**
+   - Change the verification step from 6 slots to 8 slots.
+   - Update validation text from “6-digit code” to “8-digit code”.
+   - Keep the same code-based verification flow; no magic link.
 
-1. **Fix the verification-code email delivery**
-   - Keep the current OTP/code signup flow.
-   - Re-run the managed email infrastructure setup so the missing queue processor job is created; right now the signup email is stuck as `pending`, so it was generated but never sent.
-   - Re-check the email log after setup to confirm new signup emails can move beyond `pending`.
-   - Keep the branded signup email as a 6-digit code, not a magic link.
+2. **Update the signup email wording**
+   - Change the email copy from “6-digit code” to “8-digit code”.
+   - Keep the current WeShare EduTech branded email layout.
 
-2. **Improve phone layout and prevent horizontal zooming**
-   - Update the site viewport meta to prevent user-facing horizontal zoom issues from accidental overflow.
-   - Tighten mobile spacing, font sizes, and wrapping on the landing page header/hero/publication feed.
-   - Make mobile cards and buttons fit within the viewport without causing sideways scroll.
+3. **Fix the preview/sample data**
+   - Update the email preview sample token to 8 digits so future previews match real signup emails.
 
-3. **Make cover images smaller on phones**
-   - Reduce the featured feed cover image height/aspect on mobile.
-   - Reduce the article detail cover image height on mobile, while keeping desktop images readable.
+4. **Verify the auth flow signal**
+   - Check that the form now accepts the full code length and still calls the same email verification method.
 
-4. **Fix the logo dot spacing**
-   - Move the dot closer to the “WeShare EduTech” text in the SVG logo.
-   - Keep the restored blue/white branding and do not redesign the overall UI.
-
-5. **Quick validation**
-   - Check the email log/status after the infrastructure fix.
-   - Inspect the phone-sized layout for overflow and image sizing.
+## Files to change
+- `src/routes/signup.tsx`
+- `src/lib/email-templates/signup.tsx`
+- `src/routes/lovable/email/auth/preview.ts`

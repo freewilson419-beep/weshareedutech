@@ -15,7 +15,7 @@ export const SignupEmail = ({ siteName, recipient, token }: SignupEmailProps) =>
       <Container style={container}>
         <Heading style={h1}>Confirm your email</Heading>
         <Text style={text}>
-          Welcome to <strong>{siteName}</strong>. Use the 6-digit code below to verify
+          Welcome to <strong>{siteName}</strong>. Use the code below to verify
           your email address ({recipient}) and finish creating your account.
         </Text>
         <Section style={codeBox}>
