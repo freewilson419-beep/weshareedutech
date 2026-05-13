@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
-import { ArrowRight, BookOpen, Bookmark, CheckCircle2, Clock, MessageCircle, PenLine } from "lucide-react";
+import { ArrowRight, BookOpen, Bookmark, CheckCircle2, Clock, PenLine } from "lucide-react";
 
 interface FeedItem {
   id: string;
@@ -111,12 +111,21 @@ function PublicationHome() {
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link to={session ? "/compose" : "/signup"}>
-                <Button size="lg" className="h-14 w-full px-8 text-lg font-medium shadow-lg shadow-primary/20 sm:w-auto">
-                  {session ? "Publish a Lesson" : "Create Free Account"}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              {session ? (
+                <Link to="/compose">
+                  <Button size="lg" className="h-14 w-full px-8 text-lg font-medium shadow-lg shadow-primary/20 sm:w-auto">
+                    Publish a Lesson
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/signup">
+                  <Button size="lg" className="h-14 w-full px-8 text-lg font-medium shadow-lg shadow-primary/20 sm:w-auto">
+                    Create Free Account
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
               <a href="#publications">
                 <Button variant="outline" size="lg" className="h-14 w-full px-8 text-lg font-medium sm:w-auto">
                   Browse Lessons
