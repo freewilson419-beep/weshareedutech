@@ -194,6 +194,20 @@ function Compose() {
         </Field>
         <p className="text-xs text-muted-foreground">Optional. Readers will see a "Take the quiz" button that opens this link.</p>
       </CardContent></Card>
+
+      <Card><CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="flex items-center gap-2 font-serif text-base">
+              <EyeOff className="h-4 w-4" /> Publish anonymously
+            </Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Hide your name from this lesson. Readers will see "Anonymous contributor".
+            </p>
+          </div>
+          <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
+        </div>
+      </CardContent></Card>
     </div>
   );
 }
