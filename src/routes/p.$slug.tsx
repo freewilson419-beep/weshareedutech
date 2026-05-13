@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send } from "lucide-react";
 import { toast } from "sonner";
 import { MediaRender, type MediaItem } from "@/components/media-manager";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { authorName, initialsFor } from "@/lib/author-display";
 
 interface Post {
   id: string;
@@ -26,10 +28,11 @@ interface Post {
   learn_to_teach: string;
   quiz_url: string;
   author_user_id: string;
+  is_anonymous?: boolean;
   section_media?: Record<string, MediaItem[]>;
 }
 
-interface Author { user_id: string; username: string; title: string; surname: string; affiliation: string; department: string }
+interface Author { user_id: string; username: string; title: string; surname: string; affiliation: string; department: string; avatar_url: string }
 interface Comment { id: string; body: string; created_at: string; author_user_id: string; author?: Author }
 
 export const Route = createFileRoute("/p/$slug")({
@@ -118,7 +121,7 @@ function ArticleView() {
       });
 
       const [{ data: a }, { data: clapRows }, { data: cmts }] = await Promise.all([
-        supabase.from("profiles").select("user_id,username,title,surname,affiliation,department").eq("user_id", p.author_user_id).maybeSingle(),
+        supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").eq("user_id", p.author_user_id).maybeSingle(),
         supabase.from("claps").select("count,user_id").eq("post_id", p.id),
         supabase.from("comments").select("id,body,created_at,author_user_id").eq("post_id", p.id).order("created_at", { ascending: true }),
       ]);
@@ -129,7 +132,7 @@ function ArticleView() {
 
       if (cmts?.length) {
         const ids = Array.from(new Set(cmts.map((c) => c.author_user_id)));
-        const { data: cprof } = await supabase.from("profiles").select("user_id,username,title,surname,affiliation,department").in("user_id", ids);
+        const { data: cprof } = await supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").in("user_id", ids);
         const byId = new Map(cprof?.map((x) => [x.user_id, x]) ?? []);
         setComments(cmts.map((c) => ({ ...c, author: byId.get(c.author_user_id) as Author })));
       }
@@ -155,7 +158,8 @@ function ArticleView() {
     );
   }
 
-  const authorName = author ? `${author.title ? author.title + " " : ""}${author.username || author.surname || "Anonymous"}` : "Anonymous";
+  const isAnon = !!post.is_anonymous;
+  const aName = authorName(author, isAnon);
 
   const clap = async () => {
     if (!user) return toast.error("Sign in to clap");
