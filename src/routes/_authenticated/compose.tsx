@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, Send } from "lucide-react";
+import { ImagePlus, Loader2, Save, Send, X } from "lucide-react";
+import { MediaManager, type MediaItem } from "@/components/media-manager";
 
 export const Route = createFileRoute("/_authenticated/compose")({
   validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) || undefined }),
@@ -19,16 +20,24 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60);
 }
 
+const SECTIONS = ["intro", "body", "conclusion", "reflection", "learn_to_teach"] as const;
+type SectionKey = typeof SECTIONS[number];
+
 function Compose() {
   const { user } = useAuth();
   const { id } = Route.useSearch();
   const nav = useNavigate();
   const [loading, setLoading] = useState(!!id);
   const [postId, setPostId] = useState<string | undefined>(id);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "", excerpt: "", cover_image_url: "", tags: "",
     goal: "", intro_slide: "", body_slide: "", conclusion_slide: "",
     reflection: "", learn_to_teach: "", quiz_url: "",
+  });
+  const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
+    intro: [], body: [], conclusion: [], reflection: [], learn_to_teach: [],
   });
 
   useEffect(() => {
@@ -43,6 +52,11 @@ function Compose() {
           conclusion_slide: data.conclusion_slide, reflection: data.reflection,
           learn_to_teach: data.learn_to_teach, quiz_url: data.quiz_url,
         });
+        const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
+        setMedia({
+          intro: sm.intro ?? [], body: sm.body ?? [], conclusion: sm.conclusion ?? [],
+          reflection: sm.reflection ?? [], learn_to_teach: sm.learn_to_teach ?? [],
+        });
       }
       setLoading(false);
     })();
@@ -50,6 +64,20 @@ function Compose() {
 
   const u = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const uploadCover = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) return toast.error("Pick an image file");
+    if (file.size > 10 * 1024 * 1024) return toast.error("Max 10MB");
+    setCoverUploading(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/cover-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("post-media").upload(path, file, { contentType: file.type });
+    if (error) { setCoverUploading(false); return toast.error(error.message); }
+    const { data } = supabase.storage.from("post-media").getPublicUrl(path);
+    setForm((f) => ({ ...f, cover_image_url: data.publicUrl }));
+    setCoverUploading(false);
+  };
 
   const buildPayload = () => {
     const wordCount = (form.intro_slide + " " + form.body_slide + " " + form.conclusion_slide).split(/\s+/).filter(Boolean).length;
@@ -64,6 +92,7 @@ function Compose() {
       conclusion_slide: form.conclusion_slide, reflection: form.reflection,
       learn_to_teach: form.learn_to_teach, quiz_url: form.quiz_url.trim(),
       read_time_minutes: read,
+      section_media: media,
     };
   };
 
@@ -100,18 +129,52 @@ function Compose() {
       <Card><CardContent className="space-y-5 p-6">
         <Field label="Title"><Input value={form.title} onChange={u("title")} placeholder="Your lesson title" className="font-serif text-2xl" /></Field>
         <Field label="Excerpt (1–2 sentences shown on the feed)"><Textarea value={form.excerpt} onChange={u("excerpt")} rows={2} /></Field>
-        <Field label="Cover image URL (optional)"><Input value={form.cover_image_url} onChange={u("cover_image_url")} placeholder="https://…" /></Field>
+
+        <Field label="Cover image">
+          <input
+            ref={coverRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = ""; }}
+          />
+          {form.cover_image_url ? (
+            <div className="relative overflow-hidden rounded-md border">
+              <img src={form.cover_image_url} alt="" className="aspect-[16/9] w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, cover_image_url: "" }))}
+                className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 hover:bg-background"
+                aria-label="Remove cover"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => coverRef.current?.click()}
+              disabled={coverUploading}
+              className="flex aspect-[16/9] w-full items-center justify-center rounded-md border border-dashed bg-muted/30 text-sm text-muted-foreground hover:bg-muted/50"
+            >
+              {coverUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><ImagePlus className="mr-2 h-5 w-5" /> Upload cover image</>}
+            </button>
+          )}
+          <p className="mt-1 text-xs text-muted-foreground">PNG / JPG up to 10MB. The original quality is kept.</p>
+        </Field>
+
         <Field label="Tags (comma separated)"><Input value={form.tags} onChange={u("tags")} placeholder="biology, ecosystems" /></Field>
       </CardContent></Card>
 
-      <Card><CardContent className="space-y-5 p-6">
+      <Card><CardContent className="space-y-6 p-6">
         <h2 className="font-serif text-xl">Lesson structure</h2>
         <Field label="Goal"><Textarea value={form.goal} onChange={u("goal")} rows={2} placeholder="What should the reader be able to do after?" /></Field>
-        <Field label="Introduction"><Textarea value={form.intro_slide} onChange={u("intro_slide")} rows={4} /></Field>
-        <Field label="Body"><Textarea value={form.body_slide} onChange={u("body_slide")} rows={8} /></Field>
-        <Field label="Conclusion"><Textarea value={form.conclusion_slide} onChange={u("conclusion_slide")} rows={3} /></Field>
-        <Field label="Reflection"><Textarea value={form.reflection} onChange={u("reflection")} rows={3} placeholder="What should the reader sit with?" /></Field>
-        <Field label="Learn to teach"><Textarea value={form.learn_to_teach} onChange={u("learn_to_teach")} rows={3} placeholder="A note on how to teach this back to someone else." /></Field>
+
+        <SectionBlock label="Introduction" value={form.intro_slide} onText={u("intro_slide")} rows={4} userId={user!.id} media={media.intro} setMedia={(m) => setMedia((s) => ({ ...s, intro: m }))} />
+        <SectionBlock label="Body" value={form.body_slide} onText={u("body_slide")} rows={8} userId={user!.id} media={media.body} setMedia={(m) => setMedia((s) => ({ ...s, body: m }))} />
+        <SectionBlock label="Conclusion" value={form.conclusion_slide} onText={u("conclusion_slide")} rows={3} userId={user!.id} media={media.conclusion} setMedia={(m) => setMedia((s) => ({ ...s, conclusion: m }))} />
+        <SectionBlock label="Reflection" value={form.reflection} onText={u("reflection")} rows={3} userId={user!.id} media={media.reflection} setMedia={(m) => setMedia((s) => ({ ...s, reflection: m }))} />
+        <SectionBlock label="Learn to teach" value={form.learn_to_teach} onText={u("learn_to_teach")} rows={3} userId={user!.id} media={media.learn_to_teach} setMedia={(m) => setMedia((s) => ({ ...s, learn_to_teach: m }))} />
       </CardContent></Card>
 
       <Card><CardContent className="space-y-3 p-6">
@@ -120,6 +183,26 @@ function Compose() {
         </Field>
         <p className="text-xs text-muted-foreground">Optional. Readers will see a "Take the quiz" button that opens this link.</p>
       </CardContent></Card>
+    </div>
+  );
+}
+
+function SectionBlock({
+  label, value, onText, rows, userId, media, setMedia,
+}: {
+  label: string;
+  value: string;
+  onText: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  rows: number;
+  userId: string;
+  media: MediaItem[];
+  setMedia: (m: MediaItem[]) => void;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border bg-muted/20 p-4">
+      <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Textarea value={value} onChange={onText} rows={rows} className="bg-background" />
+      <MediaManager userId={userId} items={media} onChange={setMedia} />
     </div>
   );
 }
