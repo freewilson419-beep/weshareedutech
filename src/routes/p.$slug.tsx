@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send } from "lucide-react";
 import { toast } from "sonner";
+import { MediaRender, type MediaItem } from "@/components/media-manager";
 
 interface Post {
   id: string;
@@ -25,6 +26,7 @@ interface Post {
   learn_to_teach: string;
   quiz_url: string;
   author_user_id: string;
+  section_media?: Record<string, MediaItem[]>;
 }
 
 interface Author { user_id: string; username: string; title: string; surname: string; affiliation: string; department: string }
@@ -106,7 +108,7 @@ function ArticleView() {
         setLoading(false);
         return;
       }
-      setPost(p as Post);
+      setPost(p as unknown as Post);
 
       // record view
       supabase.from("lesson_views").insert({
@@ -227,11 +229,11 @@ function ArticleView() {
 
         <div className="prose-article mt-12 space-y-12 text-[1.075rem] leading-relaxed">
           <Section label="Goal" body={post.goal} />
-          <Section label="Introduction" body={post.intro_slide} />
-          <Section label="Body" body={post.body_slide} />
-          <Section label="Conclusion" body={post.conclusion_slide} />
-          <Section label="Reflection" body={post.reflection} />
-          <Section label="Learn to teach" body={post.learn_to_teach} />
+          <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
+          <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
+          <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
+          <Section label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
+          <Section label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
         </div>
 
         {post.quiz_url && (
@@ -288,12 +290,15 @@ function ArticleView() {
   );
 }
 
-function Section({ label, body }: { label: string; body: string }) {
-  if (!body?.trim()) return null;
+function Section({ label, body, media }: { label: string; body: string; media?: MediaItem[] }) {
+  const hasBody = !!body?.trim();
+  const hasMedia = !!media?.length;
+  if (!hasBody && !hasMedia) return null;
   return (
     <section>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
-      <div className="mt-3 whitespace-pre-wrap">{body}</div>
+      {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
+      {hasMedia && <MediaRender items={media!} />}
     </section>
   );
 }
