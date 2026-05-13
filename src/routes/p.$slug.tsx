@@ -217,9 +217,13 @@ function ArticleView() {
           </div>
           <h1 className="mt-4 font-serif text-4xl font-semibold leading-tight md:text-6xl">{post.title}</h1>
           {post.excerpt && <p className="mx-auto mt-6 max-w-2xl font-serif text-lg italic text-muted-foreground md:text-xl">{post.excerpt}</p>}
-          <div className="mt-8 flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{authorName}</span>
-            {author?.affiliation && <span>· {author.affiliation}</span>}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={isAnon ? undefined : author?.avatar_url || undefined} alt={aName} />
+              <AvatarFallback className="bg-primary/10 text-xs text-primary">{initialsFor(aName)}</AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-foreground">{aName}</span>
+            {!isAnon && author?.affiliation && <span>· {author.affiliation}</span>}
             <span>·</span>
             <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {post.read_time_minutes} min read</span>
             <span>·</span>
@@ -276,12 +280,18 @@ function ArticleView() {
           )}
           <ul className="mt-8 space-y-6">
             {comments.map((c) => {
-              const cn = c.author ? `${c.author.title ? c.author.title + " " : ""}${c.author.username || c.author.surname || "Anonymous"}` : "Anonymous";
+              const cn = authorName(c.author, false);
               return (
                 <li key={c.id} className="border-b pb-6">
-                  <div className="flex items-baseline justify-between">
-                    <p className="font-medium">{cn}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={c.author?.avatar_url || undefined} alt={cn} />
+                      <AvatarFallback className="bg-primary/10 text-xs text-primary">{initialsFor(cn)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{cn}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+                    </div>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
                 </li>
