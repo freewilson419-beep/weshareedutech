@@ -220,12 +220,9 @@ function PublicationHome() {
             ) : items.length === 0 ? (
               <EmptyState signedIn={!!session} />
             ) : (
-              <>
-                {featured && <FeaturedCard item={featured} />}
-                <div className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {rest.map((item) => <ArticleCard key={item.id} item={item} />)}
-                </div>
-              </>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {items.map((item) => <ArticleCard key={item.id} item={item} />)}
+              </div>
             )}
           </div>
         </section>
@@ -239,46 +236,24 @@ function PublicationHome() {
   );
 }
 
-function FeaturedCard({ item }: { item: FeedItem }) {
-  return (
-    <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
-      <article className="grid gap-6 overflow-hidden rounded-2xl border bg-card shadow-sm md:grid-cols-2 md:gap-8">
-        {item.cover_image_url ? (
-          <div className="aspect-[16/9] overflow-hidden bg-muted md:aspect-auto">
-            <img src={item.cover_image_url} alt={item.title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
-          </div>
-        ) : (
-          <div className="aspect-[16/9] bg-primary/10 md:aspect-auto" />
-        )}
-        <div className="flex flex-col justify-center p-8 md:p-10">
-          <Badge className="mb-4 w-fit">Featured</Badge>
-          <h3 className="text-3xl font-extrabold leading-tight tracking-normal md:text-5xl group-hover:text-primary">{item.title}</h3>
-          <p className="mt-4 line-clamp-3 text-muted-foreground md:text-lg">{item.excerpt}</p>
-          <Meta item={item} className="mt-6" />
-        </div>
-      </article>
-    </Link>
-  );
-}
-
 function ArticleCard({ item }: { item: FeedItem }) {
   return (
     <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
-      <article className="h-full overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <article className="flex h-full gap-3 overflow-hidden rounded-lg border bg-card p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:flex-col sm:gap-0 sm:p-0">
         {item.cover_image_url ? (
-          <div className="aspect-[16/9] overflow-hidden bg-muted sm:aspect-[16/10]">
-            <img src={item.cover_image_url} alt={item.title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-auto sm:w-full sm:rounded-none">
+            <img src={item.cover_image_url} alt={item.title} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02] sm:aspect-[16/10]" />
           </div>
         ) : (
-          <div className="aspect-[16/9] bg-primary/10 sm:aspect-[16/10]" />
+          <div className="h-20 w-20 shrink-0 rounded-md bg-primary/10 sm:h-auto sm:w-full sm:rounded-none sm:aspect-[16/10]" />
         )}
-        <div className="p-6">
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {item.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>)}
+        <div className="min-w-0 flex-1 sm:p-4">
+          <div className="mb-1.5 flex flex-wrap gap-1 sm:mb-2">
+            {item.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>)}
           </div>
-          <h3 className="text-xl font-bold leading-snug group-hover:text-primary">{item.title}</h3>
-          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.excerpt}</p>
-          <Meta item={item} className="mt-4" />
+          <h3 className="line-clamp-2 text-sm font-bold leading-snug group-hover:text-primary sm:text-base">{item.title}</h3>
+          <p className="mt-1 line-clamp-2 hidden text-xs text-muted-foreground sm:block">{item.excerpt}</p>
+          <Meta item={item} className="mt-2" />
         </div>
       </article>
     </Link>
@@ -290,12 +265,12 @@ function Meta({ item, className }: { item: FeedItem; className?: string }) {
   const name = author ? `${author.title ? author.title + " " : ""}${author.username || author.surname || "Anonymous"}` : "Anonymous";
 
   return (
-    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground ${className ?? ""}`}>
+    <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground ${className ?? ""}`}>
       <span className="font-medium text-foreground">{name}</span>
       <span>·</span>
-      <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {item.read_time_minutes} min read</span>
+      <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {item.read_time_minutes}m</span>
       <span>·</span>
-      <span>{new Date(item.published_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+      <span>{new Date(item.published_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
     </div>
   );
 }
