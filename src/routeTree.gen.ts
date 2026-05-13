@@ -15,7 +15,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedMyLessonsRouteImport } from './routes/_authenticated/my-lessons'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedComposeRouteImport } from './routes/_authenticated/compose'
@@ -50,11 +49,6 @@ const PSlugRoute = PSlugRouteImport.update({
   path: '/p/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedMyLessonsRoute = AuthenticatedMyLessonsRouteImport.update({
   id: '/my-lessons',
   path: '/my-lessons',
@@ -85,7 +79,6 @@ export interface FileRoutesByFullPath {
   '/compose': typeof AuthenticatedComposeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-lessons': typeof AuthenticatedMyLessonsRoute
-  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/p/$slug': typeof PSlugRoute
 }
 export interface FileRoutesByTo {
@@ -97,7 +90,6 @@ export interface FileRoutesByTo {
   '/compose': typeof AuthenticatedComposeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-lessons': typeof AuthenticatedMyLessonsRoute
-  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/p/$slug': typeof PSlugRoute
 }
 export interface FileRoutesById {
@@ -111,7 +103,6 @@ export interface FileRoutesById {
   '/_authenticated/compose': typeof AuthenticatedComposeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/my-lessons': typeof AuthenticatedMyLessonsRoute
-  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/p/$slug': typeof PSlugRoute
 }
 export interface FileRouteTypes {
@@ -125,7 +116,6 @@ export interface FileRouteTypes {
     | '/compose'
     | '/dashboard'
     | '/my-lessons'
-    | '/onboarding'
     | '/p/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,7 +127,6 @@ export interface FileRouteTypes {
     | '/compose'
     | '/dashboard'
     | '/my-lessons'
-    | '/onboarding'
     | '/p/$slug'
   id:
     | '__root__'
@@ -150,7 +139,6 @@ export interface FileRouteTypes {
     | '/_authenticated/compose'
     | '/_authenticated/dashboard'
     | '/_authenticated/my-lessons'
-    | '/_authenticated/onboarding'
     | '/p/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -207,13 +195,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/my-lessons': {
       id: '/_authenticated/my-lessons'
       path: '/my-lessons'
@@ -250,7 +231,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedComposeRoute: typeof AuthenticatedComposeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyLessonsRoute: typeof AuthenticatedMyLessonsRoute
-  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -258,7 +238,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedComposeRoute: AuthenticatedComposeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyLessonsRoute: AuthenticatedMyLessonsRoute,
-  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

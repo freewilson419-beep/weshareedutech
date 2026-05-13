@@ -74,8 +74,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EduTeach — A publication for participants" },
-      { name: "description", content: "Read structured lessons published by participants. Sign in to publish, comment, and clap." },
+      { title: "WeShare EduTech — A publication for participants" },
+      { name: "description", content: "Read structured lessons published by participants on WeShare EduTech. Sign in to publish, comment, and clap." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

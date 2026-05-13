@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { AuthShell } from "./login";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Reset password — EduTeach" }] }),
+  head: () => ({ meta: [{ title: "Reset password — WeShare EduTech" }] }),
   component: ResetPage,
 });
 
