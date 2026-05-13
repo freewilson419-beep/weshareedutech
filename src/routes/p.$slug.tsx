@@ -31,6 +31,58 @@ interface Author { user_id: string; username: string; title: string; surname: st
 interface Comment { id: string; body: string; created_at: string; author_user_id: string; author?: Author }
 
 export const Route = createFileRoute("/p/$slug")({
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("posts")
+      .select("title,excerpt,cover_image_url,published_at")
+      .eq("slug", params.slug)
+      .maybeSingle();
+    return { seo: data };
+  },
+  head: ({ params, loaderData }) => {
+    const url = `https://weshareeduteach.name.ng/p/${params.slug}`;
+    const title = loaderData?.seo?.title
+      ? `${loaderData.seo.title} — WeShare EduTech`
+      : "Lesson — WeShare EduTech";
+    const description =
+      loaderData?.seo?.excerpt ||
+      "Read this lesson on WeShare EduTech, a community publication of structured lessons.";
+    const image = loaderData?.seo?.cover_image_url;
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:url", content: url },
+      { property: "og:type", content: "article" },
+    ];
+    if (image) {
+      meta.push({ property: "og:image", content: image });
+      meta.push({ name: "twitter:image", content: image });
+      meta.push({ name: "twitter:card", content: "summary_large_image" });
+    }
+    const scripts = loaderData?.seo
+      ? [
+          {
+            type: "application/ld+json",
+            children: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: loaderData.seo.title,
+              description: loaderData.seo.excerpt || undefined,
+              image: image || undefined,
+              datePublished: loaderData.seo.published_at || undefined,
+              url,
+            }),
+          },
+        ]
+      : [];
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts,
+    };
+  },
   component: ArticleView,
 });
 
