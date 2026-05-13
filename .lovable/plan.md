@@ -1,21 +1,21 @@
 ## What’s wrong
-The email template is displaying the auth provider’s actual verification token, and your screenshot shows it is currently **8 digits**. The signup page was hardcoded to ask for **6 digits**, so users receive a valid code that the web form refuses to accept.
+The signup page and branded email design are set up for **6 digits**, but the authentication service is still issuing an **8 digit** verification token, so users receive a valid code that the web form refuses to accept.
 
 ## Plan
-1. **Update the signup verification form to match the real code length**
-   - Change the verification step from 6 slots to 8 slots.
-   - Update validation text from “6-digit code” to “8-digit code”.
+1. **Keep the signup verification form at 6 digits**
+   - Keep the verification step at 6 slots.
+   - Keep validation text as “6-digit code”.
    - Keep the same code-based verification flow; no magic link.
 
-2. **Update the signup email wording**
-   - Change the email copy from “6-digit code” to “8-digit code”.
+2. **Keep the signup email wording code-length neutral**
+   - Show the actual token from the authentication service.
    - Keep the current WeShare EduTech branded email layout.
 
 3. **Fix the preview/sample data**
-   - Update the email preview sample token to 8 digits so future previews match real signup emails.
+   - Keep email preview sample tokens at 6 digits.
 
 4. **Verify the auth flow signal**
-   - Check that the form now accepts the full code length and still calls the same email verification method.
+   - Check that the form accepts 6 digits and still calls the same email verification method.
 
 ## Files to change
 - `src/routes/signup.tsx`
