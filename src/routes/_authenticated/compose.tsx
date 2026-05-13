@@ -72,15 +72,12 @@ function Compose() {
     if (!form.title.trim()) return toast.error("Add a title first");
     const base = buildPayload();
     const slug = slugify(form.title) + "-" + Math.random().toString(36).slice(2, 7);
+    const publishedAt = publish ? new Date().toISOString() : null;
     if (postId) {
-      const update: Record<string, unknown> = { ...base };
-      if (publish) update.published_at = new Date().toISOString();
-      const { error } = await supabase.from("posts").update(update).eq("id", postId);
+      const { error } = await supabase.from("posts").update({ ...base, ...(publish ? { published_at: publishedAt } : {}) }).eq("id", postId);
       if (error) return toast.error(error.message);
     } else {
-      const insert: Record<string, unknown> = { ...base, slug };
-      if (publish) insert.published_at = new Date().toISOString();
-      const { data, error } = await supabase.from("posts").insert(insert).select("id,slug").single();
+      const { data, error } = await supabase.from("posts").insert({ ...base, slug, published_at: publishedAt }).select("id,slug").single();
       if (error) return toast.error(error.message);
       setPostId(data.id);
     }
