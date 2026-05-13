@@ -22,7 +22,7 @@ interface FeedItem {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "EduTeach — A publication for participants" },
+      { title: "WeShare EduTech — A publication for participants" },
       { name: "description", content: "A growing collection of structured lessons published by the community. Read freely. Sign in to publish your own." },
     ],
   }),
@@ -71,7 +71,7 @@ function PublicationHome() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 font-serif text-xl font-semibold">
             <GraduationCap className="h-6 w-6 text-primary" />
-            EduTeach
+            WeShare EduTech
           </Link>
           <nav className="flex items-center gap-2">
             {session ? (
@@ -94,7 +94,7 @@ function PublicationHome() {
         <div className="container mx-auto px-4 py-12 md:py-20 text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Volume I · A community publication</p>
           <h1 className="mt-4 font-serif text-5xl font-semibold tracking-tight md:text-7xl">
-            EduTeach
+            WeShare EduTech
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground md:text-lg">
             Structured lessons, written by participants, for anyone who wants to learn deeper.
@@ -122,7 +122,7 @@ function PublicationHome() {
 
       <footer className="border-t py-10 text-center text-sm text-muted-foreground">
         <p className="font-serif italic">"To teach is to learn twice."</p>
-        <p className="mt-2">© {new Date().getFullYear()} EduTeach</p>
+        <p className="mt-2">© {new Date().getFullYear()} WeShare EduTech</p>
       </footer>
     </div>
   );

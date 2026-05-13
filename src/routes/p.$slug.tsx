@@ -146,7 +146,7 @@ function ArticleView() {
       <header className="border-b">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 font-serif text-xl font-semibold">
-            <GraduationCap className="h-6 w-6 text-primary" /> EduTeach
+            <GraduationCap className="h-6 w-6 text-primary" /> WeShare EduTech
           </Link>
           <Link to="/"><Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /> All lessons</Button></Link>
         </div>
