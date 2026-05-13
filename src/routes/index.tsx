@@ -87,8 +87,6 @@ function PublicationHome() {
     })();
   }, []);
 
-  const featured = items[0];
-  const rest = items.slice(1);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background selection:bg-primary/10">
