@@ -116,12 +116,6 @@
     font-feature-settings: "ss01", "cv11";
   }
 
-  h1, h2, h3 {
-    font-family: var(--font-serif);
-    font-feature-settings: "ss01";
-    letter-spacing: 0;
-  }
-
   .prose-article p {
     line-height: 1.75;
     margin-block: 1em;
