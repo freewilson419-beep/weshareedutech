@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, Save, Send, X } from "lucide-react";
+import { ImagePlus, Loader2, Save, Send, X, EyeOff } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/compose")({
   validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) || undefined }),
@@ -36,31 +37,40 @@ function Compose() {
     goal: "", intro_slide: "", body_slide: "", conclusion_slide: "",
     reflection: "", learn_to_teach: "", quiz_url: "",
   });
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
     intro: [], body: [], conclusion: [], reflection: [], learn_to_teach: [],
   });
 
   useEffect(() => {
-    if (!id) return;
+    if (!user) return;
     (async () => {
-      const { data } = await supabase.from("posts").select("*").eq("id", id).maybeSingle();
-      if (data) {
-        setForm({
-          title: data.title, excerpt: data.excerpt, cover_image_url: data.cover_image_url,
-          tags: (data.tags ?? []).join(", "),
-          goal: data.goal, intro_slide: data.intro_slide, body_slide: data.body_slide,
-          conclusion_slide: data.conclusion_slide, reflection: data.reflection,
-          learn_to_teach: data.learn_to_teach, quiz_url: data.quiz_url,
-        });
-        const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
-        setMedia({
-          intro: sm.intro ?? [], body: sm.body ?? [], conclusion: sm.conclusion ?? [],
-          reflection: sm.reflection ?? [], learn_to_teach: sm.learn_to_teach ?? [],
-        });
+      // Hydrate from existing post if editing
+      if (id) {
+        const { data } = await supabase.from("posts").select("*").eq("id", id).maybeSingle();
+        if (data) {
+          setForm({
+            title: data.title, excerpt: data.excerpt, cover_image_url: data.cover_image_url,
+            tags: (data.tags ?? []).join(", "),
+            goal: data.goal, intro_slide: data.intro_slide, body_slide: data.body_slide,
+            conclusion_slide: data.conclusion_slide, reflection: data.reflection,
+            learn_to_teach: data.learn_to_teach, quiz_url: data.quiz_url,
+          });
+          setIsAnonymous(!!data.is_anonymous);
+          const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
+          setMedia({
+            intro: sm.intro ?? [], body: sm.body ?? [], conclusion: sm.conclusion ?? [],
+            reflection: sm.reflection ?? [], learn_to_teach: sm.learn_to_teach ?? [],
+          });
+        }
+      } else {
+        // New post — apply user's default-anonymous preference
+        const { data: prof } = await supabase.from("profiles").select("default_anonymous").eq("user_id", user.id).maybeSingle();
+        if (prof?.default_anonymous) setIsAnonymous(true);
       }
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, user]);
 
   const u = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -93,6 +103,7 @@ function Compose() {
       learn_to_teach: form.learn_to_teach, quiz_url: form.quiz_url.trim(),
       read_time_minutes: read,
       section_media: media,
+      is_anonymous: isAnonymous,
     };
   };
 
