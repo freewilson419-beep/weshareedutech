@@ -26,17 +26,11 @@ function AuthLayout() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("is_complete").eq("user_id", user.id).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-      ]);
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       setIsAdmin(!!roles?.some((r) => r.role === "admin"));
       setProfileChecked(true);
-      if (!profile?.is_complete && location.pathname !== "/onboarding") {
-        navigate({ to: "/onboarding" });
-      }
     })();
-  }, [user, navigate, location.pathname]);
+  }, [user]);
 
   if (loading || !session || !profileChecked) {
     return (
@@ -57,7 +51,7 @@ function AuthLayout() {
   const Sidebar = () => (
     <div className="flex h-full flex-col">
       <Link to="/dashboard" className="flex h-16 items-center gap-2 border-b px-6 font-serif text-lg font-semibold">
-        <GraduationCap className="h-6 w-6 text-primary" /> EduTeach
+        <GraduationCap className="h-6 w-6 text-primary" /> WeShare EduTech
       </Link>
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map(({ to, label, icon: Icon }) => (
