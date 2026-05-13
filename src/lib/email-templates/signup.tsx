@@ -39,6 +39,6 @@ const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#111827', ma
 const h3 = { fontSize: '15px', fontWeight: 'bold' as const, color: '#111827', margin: '0 0 8px' }
 const text = { fontSize: '15px', color: '#374151', lineHeight: '1.6', margin: '0 0 16px' }
 const small = { fontSize: '13px', color: '#6b7280', lineHeight: '1.6', margin: '0 0 16px' }
-const code = { fontSize: '36px', fontWeight: 'bold' as const, color: '#111827', letterSpacing: '4px', margin: '8px 0 24px' }
+const code = { fontSize: '36px', fontWeight: 'bold' as const, color: '#111827', letterSpacing: '6px', margin: '8px 0 24px' }
 const hr = { borderColor: '#e5e7eb', margin: '24px 0' }
 const footer = { fontSize: '12px', color: '#9ca3af', margin: 0 }
