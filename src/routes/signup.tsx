@@ -11,7 +11,17 @@ import { toast } from "sonner";
 import { AuthShell } from "./login";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Get started — WeShare EduTech" }] }),
+  head: () => ({
+    meta: [
+      { title: "Get started — WeShare EduTech" },
+      { name: "description", content: "Create a free WeShare EduTech account to publish structured lessons, join discussions, and bookmark what you love." },
+      { property: "og:title", content: "Get started — WeShare EduTech" },
+      { property: "og:description", content: "Create a free WeShare EduTech account to publish lessons and engage with the community." },
+      { property: "og:url", content: "https://weshareeduteach.name.ng/signup" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://weshareeduteach.name.ng/signup" }],
+  }),
   component: SignupPage,
 });
 
