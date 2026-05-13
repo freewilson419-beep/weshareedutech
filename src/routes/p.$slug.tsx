@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send } from "lucide-react";
 import { toast } from "sonner";
+import { MediaRender, type MediaItem } from "@/components/media-manager";
 
 interface Post {
   id: string;
@@ -25,6 +26,7 @@ interface Post {
   learn_to_teach: string;
   quiz_url: string;
   author_user_id: string;
+  section_media?: Record<string, MediaItem[]>;
 }
 
 interface Author { user_id: string; username: string; title: string; surname: string; affiliation: string; department: string }
