@@ -170,7 +170,7 @@ function ArticleView() {
         </div>
 
         {post.cover_image_url && (
-          <img src={post.cover_image_url} alt="" className="mt-10 aspect-[16/9] w-full rounded-md object-cover" />
+          <img src={post.cover_image_url} alt="" className="mt-8 aspect-[16/9] w-full rounded-md object-cover sm:mt-10" />
         )}
 
         <div className="prose-article mt-12 space-y-12 text-[1.075rem] leading-relaxed">
