@@ -146,6 +146,26 @@ function ArticleView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, user?.id]);
 
+  // Track reading progress (signed-in users only)
+  useEffect(() => {
+    if (!post || !user) return;
+    let last = 0;
+    const onScroll = () => {
+      const scrolled = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = max > 0 ? Math.min(100, Math.round((scrolled / max) * 100)) : 0;
+      if (pct > last + 5 || pct === 100) {
+        last = pct;
+        supabase.from("reading_progress").upsert(
+          { user_id: user.id, post_id: post.id, progress_pct: pct, updated_at: new Date().toISOString() },
+          { onConflict: "user_id,post_id" }
+        );
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [post, user]);
+
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" /></div>;
   }
