@@ -11,7 +11,7 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
         fontSize="30"
         fill="currentColor"
       >
-        WeShare EduTeach
+        WeShare EduTech
       </text>
       <circle cx="300" cy="11" r="4" fill="currentColor" opacity={0.8} />
     </svg>
