@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, Clock, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings } from "lucide-react";
+import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, Clock, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings, Heart } from "lucide-react";
 import { authorName, initialsFor } from "@/lib/author-display";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -54,6 +54,7 @@ function Dashboard() {
   const [stats, setStats] = useState({ published: 0, drafts: 0, views: 0, bookmarks: 0 });
   const [feed, setFeed] = useState<Feed[]>([]);
   const [trending, setTrending] = useState<Feed[]>([]);
+  const [forYou, setForYou] = useState<Feed[]>([]);
   const [mine, setMine] = useState<MyPost[]>([]);
   const [resume, setResume] = useState<Resume | null>(null);
   const [top, setTop] = useState<TopLesson | null>(null);
