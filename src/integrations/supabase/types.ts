@@ -14,16 +14,587 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      announcements: {
+        Row: {
+          author_user_id: string
+          content: string
+          created_at: string
+          id: string
+          notify_students: boolean
+          post_id: string
+        }
+        Insert: {
+          author_user_id: string
+          content: string
+          created_at?: string
+          id?: string
+          notify_students?: boolean
+          post_id: string
+        }
+        Update: {
+          author_user_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          notify_students?: boolean
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_invites: {
+        Row: {
+          course_id: string
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_invites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          owner_user_id: string
+          school: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          owner_user_id: string
+          school?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          owner_user_id?: string
+          school?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          kind: string
+          link: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind: string
+          link?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          link?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      platform_announcements: {
+        Row: {
+          author_user_id: string
+          content: string
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          author_user_id: string
+          content: string
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          author_user_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          author_user_id: string
+          body_slide: string
+          conclusion_slide: string
+          course_id: string
+          created_at: string
+          goal: string
+          id: string
+          intro_slide: string
+          invited_emails: Json
+          learn_to_teach: string
+          reflection: string
+          title: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["post_visibility"]
+        }
+        Insert: {
+          author_user_id: string
+          body_slide?: string
+          conclusion_slide?: string
+          course_id: string
+          created_at?: string
+          goal?: string
+          id?: string
+          intro_slide?: string
+          invited_emails?: Json
+          learn_to_teach?: string
+          reflection?: string
+          title: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["post_visibility"]
+        }
+        Update: {
+          author_user_id?: string
+          body_slide?: string
+          conclusion_slide?: string
+          course_id?: string
+          created_at?: string
+          goal?: string
+          id?: string
+          intro_slide?: string
+          invited_emails?: Json
+          learn_to_teach?: string
+          reflection?: string
+          title?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["post_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          affiliation: string
+          control_number: string
+          created_at: string
+          department: string
+          email: string
+          id: string
+          is_complete: boolean
+          othernames: string
+          phone_number: string
+          surname: string
+          title: string
+          updated_at: string
+          user_id: string
+          username: string
+          whatsapp_number: string
+        }
+        Insert: {
+          affiliation?: string
+          control_number?: string
+          created_at?: string
+          department?: string
+          email?: string
+          id?: string
+          is_complete?: boolean
+          othernames?: string
+          phone_number?: string
+          surname?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+          username?: string
+          whatsapp_number?: string
+        }
+        Update: {
+          affiliation?: string
+          control_number?: string
+          created_at?: string
+          department?: string
+          email?: string
+          id?: string
+          is_complete?: boolean
+          othernames?: string
+          phone_number?: string
+          surname?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quiz_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          feedback: string
+          graded_by: string | null
+          id: string
+          is_graded: boolean
+          post_id: string
+          score: number
+          total: number
+          type_answer_score: number | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          feedback?: string
+          graded_by?: string | null
+          id?: string
+          is_graded?: boolean
+          post_id: string
+          score?: number
+          total?: number
+          type_answer_score?: number | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          feedback?: string
+          graded_by?: string | null
+          id?: string
+          is_graded?: boolean
+          post_id?: string
+          score?: number
+          total?: number
+          type_answer_score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          questions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          questions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          questions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          ai_feedback: string
+          created_at: string
+          graded_by: string | null
+          id: string
+          media_kind: string
+          media_path: string
+          post_id: string
+          retake_count: number
+          score: number | null
+          student_user_id: string
+          transcript: string
+          updated_at: string
+        }
+        Insert: {
+          ai_feedback?: string
+          created_at?: string
+          graded_by?: string | null
+          id?: string
+          media_kind: string
+          media_path: string
+          post_id: string
+          retake_count?: number
+          score?: number | null
+          student_user_id: string
+          transcript?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_feedback?: string
+          created_at?: string
+          graded_by?: string | null
+          id?: string
+          media_kind?: string
+          media_path?: string
+          post_id?: string
+          retake_count?: number
+          score?: number | null
+          student_user_id?: string
+          transcript?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      universities: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          short_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          short_code?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          short_code?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_view_post: {
+        Args: { _post_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_course_owner: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_enrolled: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "lecturer" | "admin"
+      post_visibility: "private" | "public"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +721,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "lecturer", "admin"],
+      post_visibility: ["private", "public"],
+    },
   },
 } as const
