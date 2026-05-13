@@ -4,11 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Editorial / academic design system.
- * Warm paper background, deep ink foreground, deep burgundy accent.
- * Serif (Fraunces) for headlines, sans (Inter) for UI/body.
- */
+/* Restored WeShare EduTeach design system from the uploaded original UI. */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -43,41 +39,39 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-serif: "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, serif;
+  --font-serif: Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 :root {
   --radius: 0.5rem;
-  /* Warm parchment */
-  --background: oklch(0.985 0.008 85);
-  --foreground: oklch(0.22 0.02 50);
+  --background: oklch(0.982 0.003 247.9);
+  --foreground: oklch(0.208 0.04 265.8);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.02 50);
+  --card-foreground: oklch(0.208 0.04 265.8);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.02 50);
-  /* Deep burgundy accent */
-  --primary: oklch(0.38 0.12 27);
-  --primary-foreground: oklch(0.985 0.008 85);
-  --secondary: oklch(0.94 0.015 80);
-  --secondary-foreground: oklch(0.22 0.02 50);
-  --muted: oklch(0.95 0.012 80);
-  --muted-foreground: oklch(0.48 0.02 50);
-  --accent: oklch(0.93 0.025 70);
-  --accent-foreground: oklch(0.22 0.02 50);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.985 0.008 85);
-  --border: oklch(0.89 0.015 75);
-  --input: oklch(0.89 0.015 75);
-  --ring: oklch(0.38 0.12 27);
-  --sidebar: oklch(0.97 0.012 80);
-  --sidebar-foreground: oklch(0.22 0.02 50);
-  --sidebar-primary: oklch(0.38 0.12 27);
-  --sidebar-primary-foreground: oklch(0.985 0.008 85);
-  --sidebar-accent: oklch(0.93 0.025 70);
-  --sidebar-accent-foreground: oklch(0.22 0.02 50);
-  --sidebar-border: oklch(0.89 0.015 75);
-  --sidebar-ring: oklch(0.38 0.12 27);
+  --popover-foreground: oklch(0.208 0.04 265.8);
+  --primary: oklch(0.546 0.215 262.9);
+  --primary-foreground: oklch(0.984 0.003 247.9);
+  --secondary: oklch(0.968 0.007 247.9);
+  --secondary-foreground: oklch(0.208 0.04 265.8);
+  --muted: oklch(0.968 0.007 247.9);
+  --muted-foreground: oklch(0.554 0.042 257.4);
+  --accent: oklch(0.968 0.007 247.9);
+  --accent-foreground: oklch(0.208 0.04 265.8);
+  --destructive: oklch(0.637 0.208 25.3);
+  --destructive-foreground: oklch(0.984 0.003 247.9);
+  --border: oklch(0.929 0.013 255.5);
+  --input: oklch(0.929 0.013 255.5);
+  --ring: oklch(0.546 0.215 262.9);
+  --sidebar: oklch(0.982 0.003 247.9);
+  --sidebar-foreground: oklch(0.208 0.04 265.8);
+  --sidebar-primary: oklch(0.546 0.215 262.9);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.9);
+  --sidebar-accent: oklch(0.968 0.007 247.9);
+  --sidebar-accent-foreground: oklch(0.208 0.04 265.8);
+  --sidebar-border: oklch(0.929 0.013 255.5);
+  --sidebar-ring: oklch(0.546 0.215 262.9);
 }
 
 .dark {
