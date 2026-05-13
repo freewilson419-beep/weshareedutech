@@ -23,8 +23,34 @@ interface FeedItem {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "WeShare EduTeach — Learn by sharing" },
-      { name: "description", content: "WeShare EduTeach lets participants read published lessons freely, then sign in to publish, comment, clap and bookmark lessons." },
+      { title: "WeShare EduTech — Learn by sharing" },
+      { name: "description", content: "A community learning publication where participants publish structured lessons that everyone can read freely. Sign in to publish, comment, clap, and bookmark." },
+      { property: "og:title", content: "WeShare EduTech — Learn by sharing" },
+      { property: "og:description", content: "A community learning publication where participants publish structured lessons that everyone can read freely." },
+      { property: "og:url", content: "https://weshareeduteach.name.ng/" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://weshareeduteach.name.ng/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "WeShare EduTech",
+          url: "https://weshareeduteach.name.ng/",
+          description: "A community learning publication where participants publish structured lessons.",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "WeShare EduTech",
+          url: "https://weshareeduteach.name.ng/",
+        }),
+      },
     ],
   }),
   component: PublicationHome,
