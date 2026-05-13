@@ -92,13 +92,37 @@ function PublicationHome() {
       {/* Masthead */}
       <section className="border-b bg-secondary/40">
         <div className="container mx-auto px-4 py-12 md:py-20 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Volume I · A community publication</p>
-          <h1 className="mt-4 font-serif text-5xl font-semibold tracking-tight md:text-7xl">
-            WeShare EduTech
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground md:text-lg">
-            Structured lessons, written by participants, for anyone who wants to learn deeper.
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">A community publication for participants</p>
+          <h1 className="mt-4 font-serif text-5xl font-semibold tracking-tight md:text-7xl">WeShare EduTech</h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
+            A place where participants <strong className="text-foreground">share what they know</strong> and{" "}
+            <strong className="text-foreground">learn what others share</strong>. Read every lesson freely —
+            no account required. Sign in to publish your own, leave comments, clap for what you love,
+            and bookmark posts for later.
           </p>
+          {!session && (
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              <Link to="/signup"><Button size="lg">Get started — it's free</Button></Link>
+              <Link to="/login"><Button size="lg" variant="outline">Sign in</Button></Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="border-b">
+        <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-12 md:grid-cols-3 md:py-16">
+          {[
+            { t: "Browse freely", d: "Anyone can read every published lesson. Tap a title to open the full article — no sign-up wall." },
+            { t: "Publish your own", d: "Create an account and write structured lessons. Add a cover image, tags, and even an external Google Form quiz link." },
+            { t: "Engage with the work", d: "Sign in to clap, bookmark, and discuss. Authors see how their lessons resonate with the community." },
+          ].map((s, i) => (
+            <div key={s.t}>
+              <p className="font-serif text-3xl text-primary">0{i + 1}</p>
+              <h3 className="mt-2 font-serif text-xl font-semibold">{s.t}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
+            </div>
+          ))}
         </div>
       </section>
 
