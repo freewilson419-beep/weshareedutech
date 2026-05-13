@@ -101,7 +101,7 @@ function PublicationHome() {
               Now open for every participant
             </div>
 
-            <h1 className="mb-8 text-5xl font-extrabold leading-[1.1] tracking-normal text-foreground md:text-7xl">
+            <h1 className="mb-8 text-4xl font-extrabold leading-[1.1] tracking-normal text-foreground sm:text-5xl md:text-7xl">
               Learn by <span className="text-primary">sharing</span>.<br />
               Read what others publish.
             </h1>
