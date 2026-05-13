@@ -17,6 +17,7 @@ interface FeedItem {
   read_time_minutes: number;
   published_at: string;
   author_user_id: string;
+  is_anonymous: boolean;
   author?: { username: string; title: string; surname: string };
 }
 
@@ -65,7 +66,7 @@ function PublicationHome() {
     (async () => {
       const { data: posts } = await supabase
         .from("posts")
-        .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id")
+        .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
         .not("published_at", "is", null)
         .order("published_at", { ascending: false })
         .limit(30);
@@ -260,7 +261,9 @@ function ArticleCard({ item }: { item: FeedItem }) {
 
 function Meta({ item, className }: { item: FeedItem; className?: string }) {
   const author = item.author;
-  const name = author ? `${author.title ? author.title + " " : ""}${author.username || author.surname || "Anonymous"}` : "Anonymous";
+  const name = item.is_anonymous
+    ? "Anonymous"
+    : author ? `${author.title ? author.title + " " : ""}${author.username || author.surname || "Anonymous"}` : "Anonymous";
 
   return (
     <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground ${className ?? ""}`}>

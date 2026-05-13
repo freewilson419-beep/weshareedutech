@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, LayoutDashboard, PenLine, FileText, Bookmark, Shield, LogOut, Menu } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { GraduationCap, LayoutDashboard, PenLine, FileText, Bookmark, Shield, LogOut, Menu, Settings } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { authorName, initialsFor } from "@/lib/author-display";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -17,6 +19,7 @@ function AuthLayout() {
   const [profileChecked, setProfileChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState<{ username: string; surname: string; title: string; avatar_url: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/login" });
@@ -25,8 +28,12 @@ function AuthLayout() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      const [{ data: roles }, { data: prof }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+        supabase.from("profiles").select("username,surname,title,avatar_url").eq("user_id", user.id).maybeSingle(),
+      ]);
       setIsAdmin(!!roles?.some((r) => r.role === "admin"));
+      setProfile(prof as typeof profile);
       setProfileChecked(true);
     })();
   }, [user]);
@@ -44,8 +51,11 @@ function AuthLayout() {
     { to: "/compose", label: "Write", icon: PenLine },
     { to: "/my-lessons", label: "My lessons", icon: FileText },
     { to: "/bookmarks", label: "Saved", icon: Bookmark },
+    { to: "/settings/profile", label: "Settings", icon: Settings },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
   ] as const;
+
+  const displayName = authorName(profile, false);
 
   const Sidebar = () => (
     <div className="flex h-full flex-col">
@@ -65,7 +75,17 @@ function AuthLayout() {
           </Link>
         ))}
       </nav>
-      <div className="border-t p-3">
+      <div className="space-y-2 border-t p-3">
+        <Link to="/settings/profile" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-md p-2 hover:bg-accent">
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
+            <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">{initialsFor(displayName)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{displayName}</p>
+            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+          </div>
+        </Link>
         <Button variant="ghost" className="w-full justify-start" onClick={async () => { await signOut(); navigate({ to: "/" }); }}>
           <LogOut className="h-4 w-4" /> Sign out
         </Button>
