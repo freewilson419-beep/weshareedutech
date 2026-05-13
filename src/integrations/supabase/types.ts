@@ -302,6 +302,7 @@ export type Database = {
           quiz_url: string
           read_time_minutes: number
           reflection: string
+          section_media: Json
           slug: string
           tags: string[]
           title: string
@@ -322,6 +323,7 @@ export type Database = {
           quiz_url?: string
           read_time_minutes?: number
           reflection?: string
+          section_media?: Json
           slug: string
           tags?: string[]
           title: string
@@ -342,6 +344,7 @@ export type Database = {
           quiz_url?: string
           read_time_minutes?: number
           reflection?: string
+          section_media?: Json
           slug?: string
           tags?: string[]
           title?: string
