@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PenLine } from "lucide-react";
+import { LessonSparkline } from "@/components/lesson-sparkline";
 
 interface Row { id: string; slug: string; title: string; excerpt: string; published_at: string | null; updated_at: string }
 
@@ -48,9 +49,12 @@ function MyLessons() {
                 </div>
                 <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{r.excerpt || "No excerpt"}</p>
               </div>
-              <div className="flex gap-2">
-                {r.published_at && <Link to="/p/$slug" params={{ slug: r.slug }}><Button variant="ghost" size="sm">View</Button></Link>}
-                <Link to="/compose" search={{ id: r.id }}><Button variant="outline" size="sm">Edit</Button></Link>
+              <div className="flex items-center gap-3">
+                {r.published_at && <LessonSparkline postId={r.id} />}
+                <div className="flex gap-2">
+                  {r.published_at && <Link to="/p/$slug" params={{ slug: r.slug }}><Button variant="ghost" size="sm">View</Button></Link>}
+                  <Link to="/compose" search={{ id: r.id }}><Button variant="outline" size="sm">Edit</Button></Link>
+                </div>
               </div>
             </li>
           ))}
