@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, LayoutDashboard, BookOpen, Trophy, BarChart3, Shield, LogOut, Bell, Menu } from "lucide-react";
+import { GraduationCap, LayoutDashboard, PenLine, FileText, Bookmark, Shield, LogOut, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationsBell } from "@/components/notifications-bell";
 
@@ -48,15 +48,15 @@ function AuthLayout() {
 
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/courses", label: "Courses", icon: BookOpen },
-    { to: "/scores", label: "Scores", icon: Trophy },
-    { to: "/analytics", label: "Analytics", icon: BarChart3 },
+    { to: "/compose", label: "Write", icon: PenLine },
+    { to: "/my-lessons", label: "My lessons", icon: FileText },
+    { to: "/bookmarks", label: "Saved", icon: Bookmark },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
   ] as const;
 
   const Sidebar = () => (
     <div className="flex h-full flex-col">
-      <Link to="/dashboard" className="flex h-16 items-center gap-2 border-b px-6 font-semibold">
+      <Link to="/dashboard" className="flex h-16 items-center gap-2 border-b px-6 font-serif text-lg font-semibold">
         <GraduationCap className="h-6 w-6 text-primary" /> EduTeach
       </Link>
       <nav className="flex-1 space-y-1 p-3">

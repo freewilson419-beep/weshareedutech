@@ -14,34 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      announcements: {
+      bookmarks: {
         Row: {
-          author_user_id: string
-          content: string
           created_at: string
           id: string
-          notify_students: boolean
           post_id: string
+          user_id: string
         }
         Insert: {
-          author_user_id: string
-          content: string
           created_at?: string
           id?: string
-          notify_students?: boolean
           post_id: string
+          user_id: string
         }
         Update: {
-          author_user_id?: string
-          content?: string
           created_at?: string
           id?: string
-          notify_students?: boolean
           post_id?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "announcements_post_id_fkey"
+            foreignKeyName: "bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claps: {
+        Row: {
+          count: number
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claps_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
@@ -81,90 +107,37 @@ export type Database = {
           },
         ]
       }
-      course_invites: {
+      lesson_views: {
         Row: {
-          course_id: string
           created_at: string
-          email: string
           id: string
+          post_id: string
+          referrer: string
+          viewer_user_id: string | null
+          visitor_hash: string
         }
         Insert: {
-          course_id: string
           created_at?: string
-          email: string
           id?: string
+          post_id: string
+          referrer?: string
+          viewer_user_id?: string | null
+          visitor_hash?: string
         }
         Update: {
-          course_id?: string
           created_at?: string
-          email?: string
           id?: string
+          post_id?: string
+          referrer?: string
+          viewer_user_id?: string | null
+          visitor_hash?: string
         }
         Relationships: [
           {
-            foreignKeyName: "course_invites_course_id_fkey"
-            columns: ["course_id"]
+            foreignKeyName: "lesson_views_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      courses: {
-        Row: {
-          created_at: string
-          description: string
-          id: string
-          owner_user_id: string
-          school: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string
-          id?: string
-          owner_user_id: string
-          school?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: string
-          owner_user_id?: string
-          school?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      enrollments: {
-        Row: {
-          course_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          course_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          course_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "enrollments_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
@@ -231,59 +204,63 @@ export type Database = {
           author_user_id: string
           body_slide: string
           conclusion_slide: string
-          course_id: string
+          cover_image_url: string
           created_at: string
+          excerpt: string
           goal: string
           id: string
           intro_slide: string
-          invited_emails: Json
           learn_to_teach: string
+          published_at: string | null
+          quiz_url: string
+          read_time_minutes: number
           reflection: string
+          slug: string
+          tags: string[]
           title: string
           updated_at: string
-          visibility: Database["public"]["Enums"]["post_visibility"]
         }
         Insert: {
           author_user_id: string
           body_slide?: string
           conclusion_slide?: string
-          course_id: string
+          cover_image_url?: string
           created_at?: string
+          excerpt?: string
           goal?: string
           id?: string
           intro_slide?: string
-          invited_emails?: Json
           learn_to_teach?: string
+          published_at?: string | null
+          quiz_url?: string
+          read_time_minutes?: number
           reflection?: string
+          slug: string
+          tags?: string[]
           title: string
           updated_at?: string
-          visibility?: Database["public"]["Enums"]["post_visibility"]
         }
         Update: {
           author_user_id?: string
           body_slide?: string
           conclusion_slide?: string
-          course_id?: string
+          cover_image_url?: string
           created_at?: string
+          excerpt?: string
           goal?: string
           id?: string
           intro_slide?: string
-          invited_emails?: Json
           learn_to_teach?: string
+          published_at?: string | null
+          quiz_url?: string
+          read_time_minutes?: number
           reflection?: string
+          slug?: string
+          tags?: string[]
           title?: string
           updated_at?: string
-          visibility?: Database["public"]["Enums"]["post_visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "posts_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -366,88 +343,6 @@ export type Database = {
         }
         Relationships: []
       }
-      quiz_attempts: {
-        Row: {
-          answers: Json
-          created_at: string
-          feedback: string
-          graded_by: string | null
-          id: string
-          is_graded: boolean
-          post_id: string
-          score: number
-          total: number
-          type_answer_score: number | null
-          user_id: string
-        }
-        Insert: {
-          answers?: Json
-          created_at?: string
-          feedback?: string
-          graded_by?: string | null
-          id?: string
-          is_graded?: boolean
-          post_id: string
-          score?: number
-          total?: number
-          type_answer_score?: number | null
-          user_id: string
-        }
-        Update: {
-          answers?: Json
-          created_at?: string
-          feedback?: string
-          graded_by?: string | null
-          id?: string
-          is_graded?: boolean
-          post_id?: string
-          score?: number
-          total?: number
-          type_answer_score?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_attempts_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quizzes: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          questions: Json
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          questions?: Json
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          questions?: Json
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quizzes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: true
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       settings: {
         Row: {
           id: string
@@ -468,59 +363,6 @@ export type Database = {
           value?: string
         }
         Relationships: []
-      }
-      submissions: {
-        Row: {
-          ai_feedback: string
-          created_at: string
-          graded_by: string | null
-          id: string
-          media_kind: string
-          media_path: string
-          post_id: string
-          retake_count: number
-          score: number | null
-          student_user_id: string
-          transcript: string
-          updated_at: string
-        }
-        Insert: {
-          ai_feedback?: string
-          created_at?: string
-          graded_by?: string | null
-          id?: string
-          media_kind: string
-          media_path: string
-          post_id: string
-          retake_count?: number
-          score?: number | null
-          student_user_id: string
-          transcript?: string
-          updated_at?: string
-        }
-        Update: {
-          ai_feedback?: string
-          created_at?: string
-          graded_by?: string | null
-          id?: string
-          media_kind?: string
-          media_path?: string
-          post_id?: string
-          retake_count?: number
-          score?: number | null
-          student_user_id?: string
-          transcript?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "submissions_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       universities: {
         Row: {
@@ -572,10 +414,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_view_post: {
-        Args: { _post_id: string; _user_id: string }
-        Returns: boolean
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -583,18 +421,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_course_owner: {
-        Args: { _course_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_enrolled: {
-        Args: { _course_id: string; _user_id: string }
-        Returns: boolean
-      }
     }
     Enums: {
-      app_role: "student" | "lecturer" | "admin"
-      post_visibility: "private" | "public"
+      app_role: "student" | "lecturer" | "admin" | "participant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -722,8 +551,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["student", "lecturer", "admin"],
-      post_visibility: ["private", "public"],
+      app_role: ["student", "lecturer", "admin", "participant"],
     },
   },
 } as const

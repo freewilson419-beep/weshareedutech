@@ -14,12 +14,12 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedScoresRouteImport } from './routes/_authenticated/scores'
+import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedMyLessonsRouteImport } from './routes/_authenticated/my-lessons'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedCoursesRouteImport } from './routes/_authenticated/courses'
-import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedComposeRouteImport } from './routes/_authenticated/compose'
+import { Route as AuthenticatedBookmarksRouteImport } from './routes/_authenticated/bookmarks'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -45,14 +45,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedScoresRoute = AuthenticatedScoresRouteImport.update({
-  id: '/scores',
-  path: '/scores',
-  getParentRoute: () => AuthenticatedRoute,
+const PSlugRoute = PSlugRouteImport.update({
+  id: '/p/$slug',
+  path: '/p/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMyLessonsRoute = AuthenticatedMyLessonsRouteImport.update({
+  id: '/my-lessons',
+  path: '/my-lessons',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -60,19 +65,14 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedCoursesRoute = AuthenticatedCoursesRouteImport.update({
-  id: '/courses',
-  path: '/courses',
+const AuthenticatedComposeRoute = AuthenticatedComposeRouteImport.update({
+  id: '/compose',
+  path: '/compose',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AuthenticatedBookmarksRoute = AuthenticatedBookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
@@ -81,24 +81,24 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof AuthenticatedAdminRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
-  '/courses': typeof AuthenticatedCoursesRoute
+  '/bookmarks': typeof AuthenticatedBookmarksRoute
+  '/compose': typeof AuthenticatedComposeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/my-lessons': typeof AuthenticatedMyLessonsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
-  '/scores': typeof AuthenticatedScoresRoute
+  '/p/$slug': typeof PSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof AuthenticatedAdminRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
-  '/courses': typeof AuthenticatedCoursesRoute
+  '/bookmarks': typeof AuthenticatedBookmarksRoute
+  '/compose': typeof AuthenticatedComposeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/my-lessons': typeof AuthenticatedMyLessonsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
-  '/scores': typeof AuthenticatedScoresRoute
+  '/p/$slug': typeof PSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,12 +107,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
-  '/_authenticated/courses': typeof AuthenticatedCoursesRoute
+  '/_authenticated/bookmarks': typeof AuthenticatedBookmarksRoute
+  '/_authenticated/compose': typeof AuthenticatedComposeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/my-lessons': typeof AuthenticatedMyLessonsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
-  '/_authenticated/scores': typeof AuthenticatedScoresRoute
+  '/p/$slug': typeof PSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,24 +121,24 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
-    | '/admin'
-    | '/analytics'
-    | '/courses'
+    | '/bookmarks'
+    | '/compose'
     | '/dashboard'
+    | '/my-lessons'
     | '/onboarding'
-    | '/scores'
+    | '/p/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/reset-password'
     | '/signup'
-    | '/admin'
-    | '/analytics'
-    | '/courses'
+    | '/bookmarks'
+    | '/compose'
     | '/dashboard'
+    | '/my-lessons'
     | '/onboarding'
-    | '/scores'
+    | '/p/$slug'
   id:
     | '__root__'
     | '/'
@@ -146,12 +146,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
-    | '/_authenticated/admin'
-    | '/_authenticated/analytics'
-    | '/_authenticated/courses'
+    | '/_authenticated/bookmarks'
+    | '/_authenticated/compose'
     | '/_authenticated/dashboard'
+    | '/_authenticated/my-lessons'
     | '/_authenticated/onboarding'
-    | '/_authenticated/scores'
+    | '/p/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -160,6 +160,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  PSlugRoute: typeof PSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -199,18 +200,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/scores': {
-      id: '/_authenticated/scores'
-      path: '/scores'
-      fullPath: '/scores'
-      preLoaderRoute: typeof AuthenticatedScoresRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/p/$slug': {
+      id: '/p/$slug'
+      path: '/p/$slug'
+      fullPath: '/p/$slug'
+      preLoaderRoute: typeof PSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/my-lessons': {
+      id: '/_authenticated/my-lessons'
+      path: '/my-lessons'
+      fullPath: '/my-lessons'
+      preLoaderRoute: typeof AuthenticatedMyLessonsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -220,46 +228,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/courses': {
-      id: '/_authenticated/courses'
-      path: '/courses'
-      fullPath: '/courses'
-      preLoaderRoute: typeof AuthenticatedCoursesRouteImport
+    '/_authenticated/compose': {
+      id: '/_authenticated/compose'
+      path: '/compose'
+      fullPath: '/compose'
+      preLoaderRoute: typeof AuthenticatedComposeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/analytics': {
-      id: '/_authenticated/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+    '/_authenticated/bookmarks': {
+      id: '/_authenticated/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof AuthenticatedBookmarksRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
-  AuthenticatedCoursesRoute: typeof AuthenticatedCoursesRoute
+  AuthenticatedBookmarksRoute: typeof AuthenticatedBookmarksRoute
+  AuthenticatedComposeRoute: typeof AuthenticatedComposeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedMyLessonsRoute: typeof AuthenticatedMyLessonsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
-  AuthenticatedScoresRoute: typeof AuthenticatedScoresRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
-  AuthenticatedCoursesRoute: AuthenticatedCoursesRoute,
+  AuthenticatedBookmarksRoute: AuthenticatedBookmarksRoute,
+  AuthenticatedComposeRoute: AuthenticatedComposeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedMyLessonsRoute: AuthenticatedMyLessonsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
-  AuthenticatedScoresRoute: AuthenticatedScoresRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -272,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  PSlugRoute: PSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
