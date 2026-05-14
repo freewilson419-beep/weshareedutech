@@ -22,6 +22,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedComposeRouteImport } from './routes/_authenticated/compose'
 import { Route as AuthenticatedBookmarksRouteImport } from './routes/_authenticated/bookmarks'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as ApiSignupVerifyRouteImport } from './routes/api/signup.verify'
 import { Route as AuthenticatedSettingsProfileRouteImport } from './routes/_authenticated/settings.profile'
 import { Route as AuthenticatedSettingsPreferencesRouteImport } from './routes/_authenticated/settings.preferences'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings.account'
@@ -94,6 +95,11 @@ const AuthenticatedSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const ApiSignupVerifyRoute = ApiSignupVerifyRouteImport.update({
+  id: '/api/signup/verify',
+  path: '/api/signup/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSettingsProfileRoute =
   AuthenticatedSettingsProfileRouteImport.update({
     id: '/profile',
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/preferences': typeof AuthenticatedSettingsPreferencesRoute
   '/settings/profile': typeof AuthenticatedSettingsProfileRoute
+  '/api/signup/verify': typeof ApiSignupVerifyRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/preferences': typeof AuthenticatedSettingsPreferencesRoute
   '/settings/profile': typeof AuthenticatedSettingsProfileRoute
+  '/api/signup/verify': typeof ApiSignupVerifyRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/preferences': typeof AuthenticatedSettingsPreferencesRoute
   '/_authenticated/settings/profile': typeof AuthenticatedSettingsProfileRoute
+  '/api/signup/verify': typeof ApiSignupVerifyRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/api/signup/verify'
     | '/settings/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/api/signup/verify'
     | '/settings'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/preferences'
     | '/_authenticated/settings/profile'
+    | '/api/signup/verify'
     | '/_authenticated/settings/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -261,6 +273,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   PSlugRoute: typeof PSlugRoute
+  ApiSignupVerifyRoute: typeof ApiSignupVerifyRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/api/signup/verify': {
+      id: '/api/signup/verify'
+      path: '/api/signup/verify'
+      fullPath: '/api/signup/verify'
+      preLoaderRoute: typeof ApiSignupVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/settings/profile': {
       id: '/_authenticated/settings/profile'
       path: '/profile'
@@ -451,6 +471,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   PSlugRoute: PSlugRoute,
+  ApiSignupVerifyRoute: ApiSignupVerifyRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
@@ -458,3 +479,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
