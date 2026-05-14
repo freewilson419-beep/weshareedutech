@@ -11,10 +11,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const tabs = [
   { to: "/admin", label: "Overview", icon: BarChart3, exact: true },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/lessons", label: "Lessons", icon: BookOpen },
-  { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
-  { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/admin/users", label: "Users", icon: Users, exact: false },
+  { to: "/admin/lessons", label: "Lessons", icon: BookOpen, exact: false },
+  { to: "/admin/announcements", label: "Announcements", icon: Megaphone, exact: false },
+  { to: "/admin/settings", label: "Settings", icon: SettingsIcon, exact: false },
 ] as const;
 
 function AdminLayout() {
