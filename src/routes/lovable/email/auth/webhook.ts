@@ -43,6 +43,12 @@ function redactEmail(email: string | null | undefined): string {
   return `${localPart[0]}***@${domain}`
 }
 
+function generateSixDigitCode(): string {
+  const bytes = new Uint32Array(1)
+  crypto.getRandomValues(bytes)
+  return String(bytes[0] % 1_000_000).padStart(6, '0')
+}
+
 export const Route = createFileRoute("/lovable/email/auth/webhook")({
   server: {
     handlers: {
@@ -131,25 +137,8 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           )
         }
 
-        // Build template props from payload.data (HookData structure)
-        const templateProps = {
-          siteName: SITE_NAME,
-          siteUrl: `https://${ROOT_DOMAIN}`,
-          recipient: payload.data.email,
-          confirmationUrl: payload.data.url,
-          token: payload.data.token,
-          email: payload.data.email,
-          oldEmail: payload.data.old_email,
-          newEmail: payload.data.new_email,
-        }
-
-        // Render React Email to HTML and plain text
-        const element = React.createElement(EmailTemplate, templateProps)
-        const html = await render(element)
-        const text = await render(element, { plainText: true })
-
         // Enqueue email for async processing by the dispatcher (process-email-queue).
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseUrl = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
         if (!supabaseUrl || !supabaseServiceKey) {
@@ -161,6 +150,44 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
         }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
+        let emailToken = payload.data.token
+
+        if (emailType === 'signup' && typeof payload.data.token === 'string' && payload.data.token.length > 6) {
+          const aliasCode = generateSixDigitCode()
+          const { error: aliasError } = await supabase.from('signup_otp_aliases').insert({
+            email: payload.data.email,
+            alias_code: aliasCode,
+            real_token: payload.data.token,
+          })
+
+          if (aliasError) {
+            console.error('Failed to create signup OTP alias', { error: aliasError, run_id })
+            return Response.json(
+              { error: 'Failed to prepare verification code' },
+              { status: 500 }
+            )
+          }
+
+          emailToken = aliasCode
+        }
+
+        // Build template props from payload.data (HookData structure)
+        const templateProps = {
+          siteName: SITE_NAME,
+          siteUrl: `https://${ROOT_DOMAIN}`,
+          recipient: payload.data.email,
+          confirmationUrl: payload.data.url,
+          token: emailToken,
+          email: payload.data.email,
+          oldEmail: payload.data.old_email,
+          newEmail: payload.data.new_email,
+        }
+
+        // Render React Email to HTML and plain text
+        const element = React.createElement(EmailTemplate, templateProps)
+        const html = await render(element)
+        const text = await render(element, { plainText: true })
+
         const messageId = crypto.randomUUID()
 
         // Log pending BEFORE enqueue so we have a record even if enqueue crashes
