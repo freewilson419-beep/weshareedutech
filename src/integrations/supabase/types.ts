@@ -498,6 +498,36 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_otp_aliases: {
+        Row: {
+          alias_code: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          real_token: string
+        }
+        Insert: {
+          alias_code: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          real_token: string
+        }
+        Update: {
+          alias_code?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          real_token?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
