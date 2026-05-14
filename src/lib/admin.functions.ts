@@ -1,7 +1,20 @@
+import * as React from "react";
 import { createServerFn } from "@tanstack/react-start";
+import { render } from "@react-email/components";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { TEMPLATES } from "@/lib/email-templates/registry";
+
+const EMAIL_SITE_NAME = "weshareedutech";
+const EMAIL_SENDER_DOMAIN = "notify.weshareeduteach.name.ng";
+const EMAIL_FROM_DOMAIN = "weshareeduteach.name.ng";
+
+function genToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 async function assertAdmin(userId: string) {
   const { data, error } = await supabaseAdmin
