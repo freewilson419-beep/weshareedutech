@@ -1,64 +1,87 @@
-# Big dashboard upgrade
+# Admin Space — port from original
 
-Four feature blocks, shipped in one pass.
+The DB already has the right scaffolding (`user_roles` with `app_role`, `platform_announcements`, `settings` key/value, `universities`, `lesson_views`). I'll build the admin UI on top of it and add the few server fns needed for privileged actions. Adapted from the screenshots — "Pending Grades" is dropped (no quizzes/voice subs in this project) and "Courses" becomes "Lessons" (matches our `posts` table).
 
-## 1. User profile & settings page
+## Routes
 
-New route: `/settings` (with sub-tabs: Profile, Account, Preferences).
+`/admin` layout, gated by `has_role(uid, 'admin')`. Non-admins → `/dashboard`.
 
-- **Profile picture upload** — new `avatar_url` column on `profiles`, uploaded to existing `post-media` bucket under `avatars/{user_id}/...`. Avatar shows in sidebar, dashboard hero, article author meta, and comments.
-- **Edit personal info** — title, surname, othernames, username, department, affiliation, phone, whatsapp.
-- **Account** — email (read-only display), change password, sign out from all devices.
-- **Preferences** — default to publishing anonymously (toggle), interest tags (used by recommendations).
+Tabs:
+- `/admin` — Overview
+- `/admin/users` — Users
+- `/admin/lessons` — Lessons
+- `/admin/announcements` — Announcements
+- `/admin/settings` — Platform settings
 
-## 2. Anonymous publishing
+## 1. Overview
 
-- New `is_anonymous` boolean on `posts` (default false).
-- Compose page gets a "Publish anonymously" toggle (defaults from preference).
-- On article page + feeds, anonymous posts show "Anonymous contributor" instead of author name and a generic avatar. Author can still edit their own anonymous posts (linkage stays via `author_user_id`, just hidden from UI).
-- Author analytics still attribute views to the real author.
+Stat cards (matching screenshot): Total Users, Lessons (total), Published, Drafts, Total Views (7d), Total Claps.
 
-## 3. Personalization on dashboard
+Sub-sections:
+- **Users by Role** — counts for admin / lecturer / participant
+- **Recent sign-ups** — last 5 profiles with role badge
+- **Top lessons this week** — top 5 by `lesson_views` in last 7d
+- Refresh button
 
-- **Continue reading** strip — track scroll progress per lesson in a new `reading_progress` table (`user_id`, `post_id`, `progress_pct`, `updated_at`). Resume the most recent unfinished one with a progress bar.
-- **For you** rail — lessons whose tags overlap with: tags from posts you bookmarked + tags from posts you've read >50% + interest tags from preferences. Falls back to "trending this week" if signal is thin.
-- **Trending this week** — top 6 published lessons by view count in the last 7 days.
+## 2. Users
 
-## 4. Author analytics
+- Search by name / email / department
+- List rows: avatar, full name (`title surname othernames`), email, department + joined-ago, role badge, role dropdown, delete button
+- Role dropdown writes to `user_roles` (admin / lecturer / participant)
+- Delete: server fn calls `supabaseAdmin.auth.admin.deleteUser` (cascades to profile/posts via existing FKs)
+- Self-protection: cannot demote or delete your own account
 
-- **Per-lesson sparkline** on `My lessons` page — 14-day daily view counts using existing `lesson_views`, rendered with recharts (already installed).
-- **Top performing lesson** card on dashboard — your most-viewed lesson with view count + clap count.
-- **Audience snapshot** — total unique readers (distinct `visitor_hash`), avg views/lesson, % of lessons that got ≥1 clap.
+## 3. Lessons
+
+- Search by title / author
+- Filters: All / Published / Draft / Anonymous
+- Row: cover thumb, title, author display name, status badge, views count, created-ago, delete button
+- Unpublish toggle (sets `published_at` to null / now())
+
+## 4. Announcements
+
+- Composer: title + body → "Send to Everyone"
+  - Inserts into `platform_announcements`
+  - Server fn fans out a `notifications` row for every user (uses `supabaseAdmin` to bypass the no-INSERT policy on `notifications`)
+- Past announcements list with delete (admin RLS already allows it)
+
+## 5. Settings
+
+Backed by the existing `settings` key/value table:
+- **Maintenance Mode** — toggle (`maintenance_on`) + custom banner message (`maintenance_message`). Banner shown site-wide for non-admins on `__root` / `_authenticated`.
+- **Platform Contact Email** (`contact_email`) — shown in footer.
+- **Default Anonymous Publishing** (`default_anonymous_global`) — toggle.
+- **Featured Tags** (`featured_tags`) — comma list shown on landing.
+
+Each row has its own Save button matching the screenshot pattern.
 
 ## Technical details
 
-**DB migration:**
-- `profiles`: add `avatar_url text default ''`, `interest_tags text[] default '{}'`, `default_anonymous boolean default false`.
-- `posts`: add `is_anonymous boolean default false`.
-- New `reading_progress` table with RLS (own rows only) + unique `(user_id, post_id)`.
-- Storage RLS: extend `post-media` policies to allow `avatars/{auth.uid()}/*` writes.
+**Server fns** (new — `src/lib/admin.functions.ts`, all check `has_role(userId,'admin')` first):
+- `adminListUsers()` — joins profiles + roles + post counts
+- `adminSetUserRole({ userId, role })` — replaces the row in `user_roles`
+- `adminDeleteUser({ userId })` — `supabaseAdmin.auth.admin.deleteUser`
+- `adminBroadcastAnnouncement({ title, body })` — insert announcement + bulk-insert notifications for every `profiles.user_id`
+- `adminGetOverview()` — stat aggregates
+- `adminListLessons({ search, filter })` — join posts + profile + view count
+- `adminTogglePublish({ postId })` — flip `published_at`
 
 **Routes added:**
-- `src/routes/_authenticated/settings.tsx` (layout with tabs)
-- `src/routes/_authenticated/settings.profile.tsx`
-- `src/routes/_authenticated/settings.account.tsx`
-- `src/routes/_authenticated/settings.preferences.tsx`
+- `src/routes/_authenticated/admin.tsx` (layout + admin guard + tabs UI matching screenshot)
+- `src/routes/_authenticated/admin.index.tsx` (Overview)
+- `src/routes/_authenticated/admin.users.tsx`
+- `src/routes/_authenticated/admin.lessons.tsx`
+- `src/routes/_authenticated/admin.announcements.tsx`
+- `src/routes/_authenticated/admin.settings.tsx`
 
-**Components:**
-- `src/components/avatar-upload.tsx` — uses existing `media-manager` storage pattern.
-- `src/components/lesson-sparkline.tsx` — 14-day mini chart.
-- `src/components/anon-author.tsx` — render helper that respects `is_anonymous`.
+**Frontend touches:**
+- `_authenticated.tsx` — read maintenance setting; show banner for non-admins. (Admin nav item is already wired.)
+- `index.tsx` — show maintenance banner; surface featured tags chip row.
 
-**Edits:**
-- `_authenticated.tsx` — add Settings nav item + show avatar in sidebar.
-- `dashboard.tsx` — add "Continue reading", "For you", "Trending", "Top lesson" sections.
-- `compose.tsx` — anonymous toggle, default from preference.
-- `my-lessons.tsx` — per-row sparkline + view count.
-- `p.$slug.tsx` — record reading progress on scroll, hide author when anonymous.
-- `index.tsx` (public feed) — hide author when anonymous.
-
-**No new dependencies** — recharts, supabase storage, and shadcn tabs are already in the project.
+**No DB migration needed** — every required table already exists.
 
 ## Out of scope (next round)
-
-Streaks, XP/badges, leaderboard, follows, activity feed, AI writing prompts, reader heatmaps. Happy to ship any of these next.
+- Audit log of admin actions
+- Per-user activity drill-down
+- Bulk actions (multi-select)
+- Email-log viewer (the `email_send_log` table already exists; add a 6th tab if you want it)
