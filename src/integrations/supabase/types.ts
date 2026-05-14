@@ -107,6 +107,42 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          created_at: string
+          details: string
+          id: string
+          post_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_user_id: string
+          reviewed_at: string | null
+          reviewer_user_id: string | null
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          created_at?: string
+          details?: string
+          id?: string
+          post_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_user_id: string
+          reviewed_at?: string | null
+          reviewer_user_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          id?: string
+          post_id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reporter_user_id?: string
+          reviewed_at?: string | null
+          reviewer_user_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -191,6 +227,66 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      faq_items: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          id: string
+          is_published: boolean
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      legal_documents: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -646,6 +742,14 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "lecturer" | "admin" | "participant"
+      report_reason:
+        | "spam"
+        | "inappropriate"
+        | "copyright"
+        | "misinformation"
+        | "harassment"
+        | "other"
+      report_status: "pending" | "reviewed" | "dismissed" | "removed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -774,6 +878,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "lecturer", "admin", "participant"],
+      report_reason: [
+        "spam",
+        "inappropriate",
+        "copyright",
+        "misinformation",
+        "harassment",
+        "other",
+      ],
+      report_status: ["pending", "reviewed", "dismissed", "removed"],
     },
   },
 } as const

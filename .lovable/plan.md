@@ -1,87 +1,87 @@
-# Admin Space — port from original
+## Scope
 
-The DB already has the right scaffolding (`user_roles` with `app_role`, `platform_announcements`, `settings` key/value, `universities`, `lesson_views`). I'll build the admin UI on top of it and add the few server fns needed for privileged actions. Adapted from the screenshots — "Pending Grades" is dropped (no quizzes/voice subs in this project) and "Courses" becomes "Lessons" (matches our `posts` table).
+Five workstreams shipped together. Payments deferred until you pick a monetization model.
 
-## Routes
+---
 
-`/admin` layout, gated by `has_role(uid, 'admin')`. Non-admins → `/dashboard`.
+### 1. Legal pages (admin-editable)
 
-Tabs:
-- `/admin` — Overview
-- `/admin/users` — Users
-- `/admin/lessons` — Lessons
-- `/admin/announcements` — Announcements
-- `/admin/settings` — Platform settings
+Four pages: **Terms of Service, Privacy Policy, Cookie Policy, Acceptable Use Policy**.
 
-## 1. Overview
+- Content stored in DB (not hardcoded), so you can edit anytime from the admin panel without a code change.
+- New table `legal_documents` with slug (`terms`, `privacy`, `cookies`, `aup`), title, body (markdown), updated_at.
+- Public routes: `/terms`, `/privacy`, `/cookies`, `/aup` — SSR with proper SEO meta.
+- Admin route: `/admin/legal` — list of 4 docs with a markdown editor for each.
+- Seed each doc with a Nigeria-flavored placeholder draft (NDPR mention, Lagos jurisdiction, generic contact). You replace the real text later in the admin panel.
+- Footer links added on landing + auth pages.
+- Cookie consent banner (simple accept/dismiss, stores choice in localStorage).
 
-Stat cards (matching screenshot): Total Users, Lessons (total), Published, Drafts, Total Views (7d), Total Claps.
+---
 
-Sub-sections:
-- **Users by Role** — counts for admin / lecturer / participant
-- **Recent sign-ups** — last 5 profiles with role badge
-- **Top lessons this week** — top 5 by `lesson_views` in last 7d
-- Refresh button
+### 2. Content moderation (flag-only, manual review)
 
-## 2. Users
+- New table `content_reports`: post_id, reporter_user_id, reason (enum: spam, inappropriate, copyright, misinformation, other), details (text), status (pending/reviewed/dismissed/removed), created_at, reviewed_at, reviewer_id.
+- "Report" button on every public lesson (`/p/$slug`) — opens a dialog with reason + optional details. Logged-in users only.
+- Lesson stays visible until you act (per your choice).
+- New admin route `/admin/reports` — queue of pending reports, grouped by lesson, with counts. Actions: **Dismiss report**, **Unpublish lesson**, **Delete lesson**, **Mark reviewed**.
+- Notification badge on admin nav when pending reports exist.
+- Rate-limit: one report per (user, post) — DB unique constraint.
 
-- Search by name / email / department
-- List rows: avatar, full name (`title surname othernames`), email, department + joined-ago, role badge, role dropdown, delete button
-- Role dropdown writes to `user_roles` (admin / lecturer / participant)
-- Delete: server fn calls `supabaseAdmin.auth.admin.deleteUser` (cascades to profile/posts via existing FKs)
-- Self-protection: cannot demote or delete your own account
+---
 
-## 3. Lessons
+### 3. Founder analytics dashboard
 
-- Search by title / author
-- Filters: All / Published / Draft / Anonymous
-- Row: cover thumb, title, author display name, status badge, views count, created-ago, delete button
-- Unpublish toggle (sets `published_at` to null / now())
+New admin route `/admin/analytics` showing:
 
-## 4. Announcements
+- **Users**: total signups, signups in last 7/30 days, daily signups sparkline.
+- **Lessons**: total published, published this week, drafts in progress.
+- **Engagement**: total views (last 30d), claps, comments, bookmarks.
+- **Top lists**: top 10 lessons by views (30d), top 10 authors by lessons published.
+- **Email health**: emails sent, failed, suppression list size (from existing `email_send_log`).
 
-- Composer: title + body → "Send to Everyone"
-  - Inserts into `platform_announcements`
-  - Server fn fans out a `notifications` row for every user (uses `supabaseAdmin` to bypass the no-INSERT policy on `notifications`)
-- Past announcements list with delete (admin RLS already allows it)
+All powered by server functions querying existing tables — no new tracking infra (`lesson_views` already exists).
 
-## 5. Settings
+---
 
-Backed by the existing `settings` key/value table:
-- **Maintenance Mode** — toggle (`maintenance_on`) + custom banner message (`maintenance_message`). Banner shown site-wide for non-admins on `__root` / `_authenticated`.
-- **Platform Contact Email** (`contact_email`) — shown in footer.
-- **Default Anonymous Publishing** (`default_anonymous_global`) — toggle.
-- **Featured Tags** (`featured_tags`) — comma list shown on landing.
+### 4. Help Center / FAQ
 
-Each row has its own Save button matching the screenshot pattern.
+- Public route `/help` — searchable FAQ grouped by category (Getting Started, Writing Lessons, Account & Profile, Notifications & Email, Troubleshooting, Contact).
+- Admin-editable FAQs (table `faq_items`: category, question, answer, sort_order, is_published) so you can add/remove/reorder without code.
+- Admin route `/admin/faqs` to manage them.
+- Seed with ~15 starter FAQs based on existing app features.
+- "Contact support" section with mailto + WhatsApp link.
 
-## Technical details
+---
 
-**Server fns** (new — `src/lib/admin.functions.ts`, all check `has_role(userId,'admin')` first):
-- `adminListUsers()` — joins profiles + roles + post counts
-- `adminSetUserRole({ userId, role })` — replaces the row in `user_roles`
-- `adminDeleteUser({ userId })` — `supabaseAdmin.auth.admin.deleteUser`
-- `adminBroadcastAnnouncement({ title, body })` — insert announcement + bulk-insert notifications for every `profiles.user_id`
-- `adminGetOverview()` — stat aggregates
-- `adminListLessons({ search, filter })` — join posts + profile + view count
-- `adminTogglePublish({ postId })` — flip `published_at`
+### 5. Landing-page + SEO improvements
 
-**Routes added:**
-- `src/routes/_authenticated/admin.tsx` (layout + admin guard + tabs UI matching screenshot)
-- `src/routes/_authenticated/admin.index.tsx` (Overview)
-- `src/routes/_authenticated/admin.users.tsx`
-- `src/routes/_authenticated/admin.lessons.tsx`
-- `src/routes/_authenticated/admin.announcements.tsx`
-- `src/routes/_authenticated/admin.settings.tsx`
+- Per-route `head()` metadata audit on all public routes (`/`, `/login`, `/signup`, `/p/$slug`, `/help`, `/terms`, etc.) — unique title, description, og:title, og:description, canonical, og:url.
+- JSON-LD: `Organization` on root, `Article` on lesson pages (already partly there — verify), `FAQPage` on `/help`.
+- Update `public/robots.txt` to allow crawling + reference sitemap.
+- Verify `sitemap.xml` includes new public routes (terms, privacy, help, etc.).
+- Landing page polish: clearer hero CTA, social proof section (lesson count, user count — real numbers from DB), "How it works" 3-step strip, footer with legal + help links.
+- Open Graph image for sharing (generic branded card; you can replace later).
 
-**Frontend touches:**
-- `_authenticated.tsx` — read maintenance setting; show banner for non-admins. (Admin nav item is already wired.)
-- `index.tsx` — show maintenance banner; surface featured tags chip row.
+---
 
-**No DB migration needed** — every required table already exists.
+### 6. Payments — deferred
 
-## Out of scope (next round)
-- Audit log of admin actions
-- Per-user activity drill-down
-- Bulk actions (multi-select)
-- Email-log viewer (the `email_send_log` table already exists; add a 6th tab if you want it)
+Skipped per your answer ("not decided yet"). When you pick freemium / donations / subscription, ping me and I'll wire Paddle or Stripe in one focused pass.
+
+---
+
+## Technical notes
+
+- All new tables get RLS: legal/FAQ public-read + admin-write; reports insertable by any authed user, readable only by admin + own.
+- All admin pages live under existing `/admin/*` route group (already gated).
+- Markdown rendering: add `react-markdown` (small, safe) for legal + FAQ content.
+- Analytics queries run via `createServerFn` with `requireSupabaseAuth` + admin-role check (not `supabaseAdmin`).
+- No new external services, no new secrets, no email infra changes.
+
+---
+
+## Order of execution
+
+Single batch as you requested. Migrations first → admin UIs → public pages → SEO polish → seed content. Roughly one continuous build.
+
+Approve the plan and I'll start building.
