@@ -267,21 +267,30 @@ export type Database = {
           author_user_id: string
           content: string
           created_at: string
+          cta_label: string
+          cta_url: string
           id: string
+          image_url: string | null
           title: string
         }
         Insert: {
           author_user_id: string
           content: string
           created_at?: string
+          cta_label?: string
+          cta_url?: string
           id?: string
+          image_url?: string | null
           title: string
         }
         Update: {
           author_user_id?: string
           content?: string
           created_at?: string
+          cta_label?: string
+          cta_url?: string
           id?: string
+          image_url?: string | null
           title?: string
         }
         Relationships: []

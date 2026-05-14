@@ -27,14 +27,17 @@ export function NotificationsBell() {
 
   const unread = items.filter((n) => !n.is_read).length;
 
-  const markAllRead = async () => {
-    if (!unread) return;
-    await supabase.from("notifications").update({ is_read: true }).eq("is_read", false);
-    setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  // When the user opens the bell, delete the notifications they're seeing
+  // (they've now "checked" them — no need to keep them stored).
+  const clearOnOpen = async () => {
+    if (items.length === 0) return;
+    const ids = items.map((n) => n.id);
+    setItems([]);
+    await supabase.from("notifications").delete().in("id", ids);
   };
 
   return (
-    <Popover onOpenChange={(o) => o && markAllRead()}>
+    <Popover onOpenChange={(o) => o && clearOnOpen()}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -45,7 +48,7 @@ export function NotificationsBell() {
         <div className="border-b p-3 font-semibold">Notifications</div>
         <div className="max-h-80 overflow-y-auto">
           {items.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">No notifications yet</p>
+            <p className="p-6 text-center text-sm text-muted-foreground">You're all caught up</p>
           ) : items.map((n) => (
             <a key={n.id} href={n.link || "#"} className="block border-b p-3 text-sm hover:bg-accent">
               <div className="font-medium">{n.title}</div>
