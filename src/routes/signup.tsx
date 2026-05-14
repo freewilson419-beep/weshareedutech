@@ -75,10 +75,23 @@ function SignupPage() {
     e.preventDefault();
     if (code.length !== 6) return toast.error("Enter the 6-digit code");
     setLoading(true);
-    const { data, error } = await supabase.auth.verifyOtp({ email: form.email, token: code, type: "email" });
-    if (error || !data.user) {
+    const response = await fetch("/api/signup/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email, code }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.user || !result.session) {
       setLoading(false);
-      return toast.error(error?.message || "Invalid code");
+      return toast.error(result.error || "Invalid code");
+    }
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
+    });
+    if (sessionError) {
+      setLoading(false);
+      return toast.error(sessionError.message);
     }
     const { error: pErr } = await supabase
       .from("profiles")
@@ -91,7 +104,7 @@ function SignupPage() {
         whatsapp_number: form.whatsapp_number,
         is_complete: true,
       })
-      .eq("user_id", data.user.id);
+      .eq("user_id", result.user.id);
     setLoading(false);
     if (pErr) return toast.error(pErr.message);
     toast.success("Welcome to WeShare EduTech");
