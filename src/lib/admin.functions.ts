@@ -194,21 +194,86 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       .single();
     if (aErr) throw new Error(aErr.message);
 
-    const { data: users } = await supabaseAdmin.from("profiles").select("user_id");
-    const rows = (users ?? []).map((u: any) => ({
+    const { data: users } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id,email,title,surname,othernames");
+
+    const notifRows = (users ?? []).map((u: any) => ({
       user_id: u.user_id,
       kind: "announcement",
       title: data.title,
       body: data.body,
       link: "/dashboard",
     }));
-    if (rows.length) {
-      // chunk to avoid payload limits
-      for (let i = 0; i < rows.length; i += 500) {
-        await supabaseAdmin.from("notifications").insert(rows.slice(i, i + 500));
+    if (notifRows.length) {
+      for (let i = 0; i < notifRows.length; i += 500) {
+        await supabaseAdmin.from("notifications").insert(notifRows.slice(i, i + 500));
       }
     }
-    return { id: ann.id, recipients: rows.length };
+
+    // Enqueue an email per user (queue handles rate limits + retries)
+    let emailsQueued = 0;
+    for (const u of (users ?? []) as any[]) {
+      const email = (u.email || "").trim();
+      if (!email || !email.includes("@")) continue;
+      const name = [u.title, u.surname, u.othernames].filter(Boolean).join(" ").trim() || undefined;
+      const messageId = crypto.randomUUID();
+      // Check suppression
+      const { data: sup } = await supabaseAdmin
+        .from("suppressed_emails").select("id").eq("email", email.toLowerCase()).maybeSingle();
+      if (sup) continue;
+      const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
+        queue_name: "transactional_emails",
+        payload: {
+          message_id: messageId,
+          template_name: "announcement",
+          recipient_email: email,
+          template_data: { title: data.title, body: data.body, recipientName: name },
+          idempotency_key: `announcement-${ann.id}-${u.user_id}`,
+          announcement_id: ann.id,
+          queued_at: new Date().toISOString(),
+        },
+      });
+      if (!enqErr) emailsQueued++;
+    }
+
+    return { id: ann.id, recipients: notifRows.length, emailsQueued };
+  });
+
+export const adminUpdateAnnouncement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid(),
+      title: z.string().min(1).max(200),
+      body: z.string().min(1).max(4000),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: prev, error: pErr } = await supabaseAdmin
+      .from("platform_announcements")
+      .select("title,content")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!prev) throw new Error("Announcement not found");
+
+    const { error } = await supabaseAdmin
+      .from("platform_announcements")
+      .update({ title: data.title, content: data.body })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+
+    // Keep the in-app notification copies in sync (silent — no resend of email)
+    await supabaseAdmin
+      .from("notifications")
+      .update({ title: data.title, body: data.body })
+      .eq("kind", "announcement")
+      .eq("title", prev.title)
+      .eq("body", prev.content);
+
+    return { ok: true };
   });
 
 export const adminListAnnouncements = createServerFn({ method: "GET" })
