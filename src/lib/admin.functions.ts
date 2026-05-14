@@ -224,26 +224,53 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       }
     }
 
-    // Enqueue an email per user (queue handles rate limits + retries)
+    // Render + enqueue an email per user (queue handles rate limits + retries)
+    const tpl = TEMPLATES["announcement"];
     let emailsQueued = 0;
     for (const u of (users ?? []) as any[]) {
       const email = (u.email || "").trim();
       if (!email || !email.includes("@")) continue;
-      const name = [u.title, u.surname, u.othernames].filter(Boolean).join(" ").trim() || undefined;
-      const messageId = crypto.randomUUID();
-      // Check suppression
+      const lc = email.toLowerCase();
       const { data: sup } = await supabaseAdmin
-        .from("suppressed_emails").select("id").eq("email", email.toLowerCase()).maybeSingle();
+        .from("suppressed_emails").select("id").eq("email", lc).maybeSingle();
       if (sup) continue;
+
+      // Reuse or create unsubscribe token
+      let unsubToken: string | null = null;
+      const { data: existing } = await supabaseAdmin
+        .from("email_unsubscribe_tokens").select("token,used_at").eq("email", lc).maybeSingle();
+      if (existing && !existing.used_at) unsubToken = existing.token;
+      else if (!existing) {
+        unsubToken = genToken();
+        await supabaseAdmin.from("email_unsubscribe_tokens")
+          .upsert({ token: unsubToken, email: lc }, { onConflict: "email", ignoreDuplicates: true });
+      } else continue;
+
+      const name = [u.title, u.surname, u.othernames].filter(Boolean).join(" ").trim() || undefined;
+      const props = { title: data.title, body: data.body, recipientName: name };
+      const element = React.createElement(tpl.component, props);
+      const html = await render(element);
+      const text = await render(element, { plainText: true });
+      const subject = typeof tpl.subject === "function" ? tpl.subject(props) : tpl.subject;
+      const messageId = crypto.randomUUID();
+
+      await supabaseAdmin.from("email_send_log").insert({
+        message_id: messageId, template_name: "announcement",
+        recipient_email: email, status: "pending",
+      });
+
       const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
         queue_name: "transactional_emails",
         payload: {
           message_id: messageId,
-          template_name: "announcement",
-          recipient_email: email,
-          template_data: { title: data.title, body: data.body, recipientName: name },
+          to: email,
+          from: `${EMAIL_SITE_NAME} <noreply@${EMAIL_FROM_DOMAIN}>`,
+          sender_domain: EMAIL_SENDER_DOMAIN,
+          subject, html, text,
+          purpose: "transactional",
+          label: "announcement",
           idempotency_key: `announcement-${ann.id}-${u.user_id}`,
-          announcement_id: ann.id,
+          unsubscribe_token: unsubToken,
           queued_at: new Date().toISOString(),
         },
       });
