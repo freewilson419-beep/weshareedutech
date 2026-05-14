@@ -196,13 +196,25 @@ export const adminDeleteLesson = createServerFn({ method: "POST" })
 export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ title: z.string().min(1).max(200), body: z.string().min(1).max(4000) }).parse(d),
+    z.object({
+      title: z.string().min(1).max(200),
+      body: z.string().min(1).max(4000),
+      imageUrl: z.string().url().max(1000).optional().or(z.literal("")),
+      ctaLabel: z.string().min(1).max(40).optional(),
+      ctaUrl: z.string().min(1).max(500).optional(),
+    }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
+    const ctaLabel = (data.ctaLabel || "Open").trim();
+    const ctaUrl = (data.ctaUrl || "/dashboard").trim();
+    const imageUrl = data.imageUrl?.trim() || null;
     const { data: ann, error: aErr } = await supabaseAdmin
       .from("platform_announcements")
-      .insert({ title: data.title, content: data.body, author_user_id: context.userId })
+      .insert({
+        title: data.title, content: data.body, author_user_id: context.userId,
+        image_url: imageUrl, cta_label: ctaLabel, cta_url: ctaUrl,
+      })
       .select("id")
       .single();
     if (aErr) throw new Error(aErr.message);
@@ -216,7 +228,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       kind: "announcement",
       title: data.title,
       body: data.body,
-      link: "/dashboard",
+      link: ctaUrl,
     }));
     if (notifRows.length) {
       for (let i = 0; i < notifRows.length; i += 500) {
@@ -247,7 +259,10 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       } else continue;
 
       const name = [u.title, u.surname, u.othernames].filter(Boolean).join(" ").trim() || undefined;
-      const props = { title: data.title, body: data.body, recipientName: name };
+      const props = {
+        title: data.title, body: data.body, recipientName: name,
+        imageUrl: imageUrl || undefined, ctaLabel, ctaUrl,
+      };
       const element = React.createElement(tpl.component, props);
       const html = await render(element);
       const text = await render(element, { plainText: true });
@@ -287,6 +302,9 @@ export const adminUpdateAnnouncement = createServerFn({ method: "POST" })
       id: z.string().uuid(),
       title: z.string().min(1).max(200),
       body: z.string().min(1).max(4000),
+      imageUrl: z.string().url().max(1000).optional().or(z.literal("")),
+      ctaLabel: z.string().min(1).max(40).optional(),
+      ctaUrl: z.string().min(1).max(500).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -299,16 +317,22 @@ export const adminUpdateAnnouncement = createServerFn({ method: "POST" })
     if (pErr) throw new Error(pErr.message);
     if (!prev) throw new Error("Announcement not found");
 
+    const ctaLabel = (data.ctaLabel || "Open").trim();
+    const ctaUrl = (data.ctaUrl || "/dashboard").trim();
+    const imageUrl = data.imageUrl?.trim() || null;
+
     const { error } = await supabaseAdmin
       .from("platform_announcements")
-      .update({ title: data.title, content: data.body })
+      .update({
+        title: data.title, content: data.body,
+        image_url: imageUrl, cta_label: ctaLabel, cta_url: ctaUrl,
+      })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
 
-    // Keep the in-app notification copies in sync (silent — no resend of email)
     await supabaseAdmin
       .from("notifications")
-      .update({ title: data.title, body: data.body })
+      .update({ title: data.title, body: data.body, link: ctaUrl })
       .eq("kind", "announcement")
       .eq("title", prev.title)
       .eq("body", prev.content);
@@ -322,7 +346,7 @@ export const adminListAnnouncements = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const { data } = await supabaseAdmin
       .from("platform_announcements")
-      .select("id,title,content,created_at")
+      .select("id,title,content,image_url,cta_label,cta_url,created_at")
       .order("created_at", { ascending: false })
       .limit(50);
     return data ?? [];
