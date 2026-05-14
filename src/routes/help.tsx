@@ -95,7 +95,7 @@ function HelpPage() {
               <section key={cat}>
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{cat}</h2>
                 <Accordion type="multiple" className="rounded-lg border bg-card">
-                  {items.map((f) => (
+                  {items.map((f: any) => (
                     <AccordionItem key={f.id} value={f.id} className="px-4">
                       <AccordionTrigger className="text-left text-sm font-medium">{f.question}</AccordionTrigger>
                       <AccordionContent className="whitespace-pre-wrap text-sm text-muted-foreground">{f.answer}</AccordionContent>
