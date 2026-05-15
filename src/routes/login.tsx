@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -46,6 +47,10 @@ function LoginPage() {
 
   return (
     <AuthShell title="Welcome back" subtitle="Sign in to continue">
+      <GoogleSignInButton />
+      <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" /> OR <span className="h-px flex-1 bg-border" />
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         <div className="space-y-2">

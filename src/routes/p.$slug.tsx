@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { MediaRender, type MediaItem } from "@/components/media-manager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authorName, initialsFor } from "@/lib/author-display";
+import { ReportLessonButton } from "@/components/report-lesson-button";
+import { SiteFooter } from "@/components/site-footer";
 
 interface Post {
   id: string;
@@ -276,13 +278,14 @@ function ArticleView() {
         )}
 
         {/* Engagement bar */}
-        <div className="mt-12 flex items-center justify-center gap-3 border-y py-4">
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-3 border-y py-4">
           <Button variant={myClaps > 0 ? "default" : "outline"} onClick={clap}>
             👏 {claps} {myClaps > 0 && <span className="ml-1 text-xs opacity-80">(+{myClaps})</span>}
           </Button>
           <Button variant={bookmarked ? "default" : "outline"} onClick={toggleBookmark}>
             <Bookmark className="h-4 w-4" /> {bookmarked ? "Saved" : "Save"}
           </Button>
+          <ReportLessonButton postId={post.id} />
         </div>
 
         {/* Comments */}
@@ -320,6 +323,7 @@ function ArticleView() {
           </ul>
         </section>
       </article>
+      <SiteFooter />
     </div>
   );
 }

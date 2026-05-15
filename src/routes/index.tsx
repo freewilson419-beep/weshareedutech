@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
+import { SiteFooter } from "@/components/site-footer";
 import { ArrowRight, BookOpen, Bookmark, CheckCircle2, Clock, PenLine } from "lucide-react";
 
 interface FeedItem {
@@ -75,6 +76,7 @@ function PublicationHome() {
         .from("posts")
         .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
         .not("published_at", "is", null)
+        .eq("is_unlisted", false)
         .order("published_at", { ascending: false })
         .limit(30);
 
@@ -234,10 +236,7 @@ function PublicationHome() {
         </section>
       </main>
 
-      <footer className="border-t bg-muted/30 py-12 text-center text-muted-foreground">
-        <Logo className="mx-auto mb-4 h-6 w-auto text-muted-foreground/50" />
-        <p className="text-sm">Share what you know. Learn what others share.</p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -30,13 +30,16 @@ function AuthLayout() {
     (async () => {
       const [{ data: roles }, { data: prof }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
-        supabase.from("profiles").select("username,surname,title,avatar_url").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("username,surname,title,avatar_url,is_complete").eq("user_id", user.id).maybeSingle(),
       ]);
       setIsAdmin(!!roles?.some((r) => r.role === "admin"));
       setProfile(prof as typeof profile);
       setProfileChecked(true);
+      if (prof && !prof.is_complete && window.location.pathname !== "/complete-profile") {
+        navigate({ to: "/complete-profile", replace: true });
+      }
     })();
-  }, [user]);
+  }, [user, navigate]);
 
   if (loading || !session || !profileChecked) {
     return (

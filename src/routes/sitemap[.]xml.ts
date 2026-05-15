@@ -19,6 +19,11 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/", changefreq: "daily", priority: "1.0" },
           { path: "/login", changefreq: "yearly", priority: "0.3" },
           { path: "/signup", changefreq: "yearly", priority: "0.5" },
+          { path: "/help", changefreq: "monthly", priority: "0.6" },
+          { path: "/terms", changefreq: "yearly", priority: "0.3" },
+          { path: "/privacy", changefreq: "yearly", priority: "0.3" },
+          { path: "/cookies", changefreq: "yearly", priority: "0.3" },
+          { path: "/aup", changefreq: "yearly", priority: "0.3" },
         ];
 
         try {
@@ -26,6 +31,7 @@ export const Route = createFileRoute("/sitemap.xml")({
             .from("posts")
             .select("slug, published_at")
             .not("published_at", "is", null)
+            .eq("is_unlisted", false)
             .order("published_at", { ascending: false })
             .limit(5000);
           for (const p of posts ?? []) {

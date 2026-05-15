@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, Save, Send, X, EyeOff } from "lucide-react";
+import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
 import { Switch } from "@/components/ui/switch";
 
@@ -38,6 +38,8 @@ function Compose() {
     reflection: "", learn_to_teach: "", quiz_url: "",
   });
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isUnlisted, setIsUnlisted] = useState(false);
+  const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
     intro: [], body: [], conclusion: [], reflection: [], learn_to_teach: [],
   });
@@ -57,6 +59,8 @@ function Compose() {
             learn_to_teach: data.learn_to_teach, quiz_url: data.quiz_url,
           });
           setIsAnonymous(!!data.is_anonymous);
+          setIsUnlisted(!!data.is_unlisted);
+          if (data.is_unlisted && data.published_at) setPublishedSlug(data.slug);
           const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
           setMedia({
             intro: sm.intro ?? [], body: sm.body ?? [], conclusion: sm.conclusion ?? [],
@@ -104,6 +108,7 @@ function Compose() {
       read_time_minutes: read,
       section_media: media,
       is_anonymous: isAnonymous,
+      is_unlisted: isUnlisted,
     };
   };
 
@@ -113,17 +118,28 @@ function Compose() {
     const base = buildPayload();
     const slug = slugify(form.title) + "-" + Math.random().toString(36).slice(2, 7);
     const publishedAt = publish ? new Date().toISOString() : null;
+    let savedSlug: string | undefined;
     if (postId) {
-      const { error } = await supabase.from("posts").update({ ...base, ...(publish ? { published_at: publishedAt } : {}) }).eq("id", postId);
+      const { data, error } = await supabase.from("posts").update({ ...base, ...(publish ? { published_at: publishedAt } : {}) }).eq("id", postId).select("slug").single();
       if (error) return toast.error(error.message);
+      savedSlug = data?.slug;
     } else {
       const { data, error } = await supabase.from("posts").insert({ ...base, slug, published_at: publishedAt }).select("id,slug").single();
       if (error) return toast.error(error.message);
       setPostId(data.id);
+      savedSlug = data.slug;
     }
-    toast.success(publish ? "Published!" : "Draft saved");
-    if (publish) nav({ to: "/dashboard" });
+    toast.success(publish ? (isUnlisted ? "Published as private link" : "Published!") : "Draft saved");
+    if (publish) {
+      if (isUnlisted && savedSlug) {
+        setPublishedSlug(savedSlug);
+      } else {
+        nav({ to: "/dashboard" });
+      }
+    }
   };
+
+  const shareUrl = publishedSlug ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${publishedSlug}` : "";
 
   if (loading) return <div className="flex justify-center py-24"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" /></div>;
 
@@ -207,6 +223,35 @@ function Compose() {
           </div>
           <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
         </div>
+      </CardContent></Card>
+
+      <Card><CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="flex items-center gap-2 font-serif text-base">
+              <LinkIcon className="h-4 w-4" /> Private (link only)
+            </Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Don't show this lesson on the public feed or sitemap. Only people you share the link with can read it.
+            </p>
+          </div>
+          <Switch checked={isUnlisted} onCheckedChange={setIsUnlisted} />
+        </div>
+        {publishedSlug && isUnlisted && (
+          <div className="mt-4 rounded-md border bg-muted/40 p-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Share this link</p>
+            <div className="mt-2 flex items-center gap-2">
+              <Input readOnly value={shareUrl} className="text-xs" />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied"); }}
+              >
+                <Copy className="h-4 w-4" /> Copy
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent></Card>
     </div>
   );
