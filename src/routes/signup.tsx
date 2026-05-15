@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { AuthShell } from "./login";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -140,6 +141,10 @@ function SignupPage() {
 
   return (
     <AuthShell title="Get started" subtitle="Create your WeShare EduTech account">
+      <GoogleSignInButton label="Sign up with Google" />
+      <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" /> OR <span className="h-px flex-1 bg-border" />
+      </div>
       <form onSubmit={handleCreate} className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
