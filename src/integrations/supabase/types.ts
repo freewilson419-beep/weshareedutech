@@ -403,6 +403,7 @@ export type Database = {
           id: string
           intro_slide: string
           is_anonymous: boolean
+          is_unlisted: boolean
           learn_to_teach: string
           published_at: string | null
           quiz_url: string
@@ -425,6 +426,7 @@ export type Database = {
           id?: string
           intro_slide?: string
           is_anonymous?: boolean
+          is_unlisted?: boolean
           learn_to_teach?: string
           published_at?: string | null
           quiz_url?: string
@@ -447,6 +449,7 @@ export type Database = {
           id?: string
           intro_slide?: string
           is_anonymous?: boolean
+          is_unlisted?: boolean
           learn_to_teach?: string
           published_at?: string | null
           quiz_url?: string
