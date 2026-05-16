@@ -18,6 +18,7 @@ const tabs = [
   { to: "/admin/announcements", label: "Announcements", icon: Megaphone, exact: false },
   { to: "/admin/legal", label: "Legal", icon: FileText, exact: false },
   { to: "/admin/faqs", label: "FAQs", icon: HelpCircle, exact: false },
+  { to: "/admin/billing", label: "Billing", icon: CreditCard, exact: false },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon, exact: false },
 ] as const;
 
