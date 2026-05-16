@@ -183,13 +183,20 @@ function ArticleView() {
   const isAnon = !!post.is_anonymous;
   const aName = authorName(author, isAnon);
 
-  const clap = async () => {
-    if (!user) return toast.error("Sign in to clap");
-    if (myClaps >= 50) return;
-    const next = myClaps + 1;
-    setMyClaps(next);
-    setClaps((c) => c + 1);
-    await supabase.from("claps").upsert({ user_id: user.id, post_id: post.id, count: next, updated_at: new Date().toISOString() }, { onConflict: "user_id,post_id" });
+  const toggleLike = async () => {
+    if (!user) return toast.error("Sign in to like");
+    if (liked) {
+      setLiked(false);
+      setLikes((c) => Math.max(0, c - 1));
+      await supabase.from("claps").delete().eq("post_id", post.id).eq("user_id", user.id);
+    } else {
+      setLiked(true);
+      setLikes((c) => c + 1);
+      await supabase.from("claps").upsert(
+        { user_id: user.id, post_id: post.id, count: 1, updated_at: new Date().toISOString() },
+        { onConflict: "user_id,post_id" }
+      );
+    }
   };
 
   const toggleBookmark = async () => {
