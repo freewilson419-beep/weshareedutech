@@ -99,8 +99,8 @@ function ArticleView() {
   const [post, setPost] = useState<Post | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [loading, setLoading] = useState(true);
-  const [claps, setClaps] = useState(0);
-  const [myClaps, setMyClaps] = useState(0);
+  const [likes, setLikes] = useState(0);
+  const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
