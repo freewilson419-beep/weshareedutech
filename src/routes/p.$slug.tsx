@@ -115,8 +115,8 @@ function ArticleView() {
       }
       setPost(p as unknown as Post);
 
-      // record view
-      supabase.from("lesson_views").insert({
+      // record view (await so the request actually fires)
+      await supabase.from("lesson_views").insert({
         post_id: p.id,
         viewer_user_id: user?.id ?? null,
         referrer: typeof document !== "undefined" ? document.referrer : "",
@@ -128,9 +128,9 @@ function ArticleView() {
         supabase.from("comments").select("id,body,created_at,author_user_id").eq("post_id", p.id).order("created_at", { ascending: true }),
       ]);
       setAuthor(a as Author | null);
-      const total = (clapRows ?? []).reduce((s, r) => s + (r.count || 0), 0);
-      setClaps(total);
-      if (user) setMyClaps((clapRows ?? []).find((r) => r.user_id === user.id)?.count ?? 0);
+      // One like per user: count distinct rows
+      setLikes((clapRows ?? []).length);
+      if (user) setLiked(!!(clapRows ?? []).find((r) => r.user_id === user.id));
 
       if (cmts?.length) {
         const ids = Array.from(new Set(cmts.map((c) => c.author_user_id)));
