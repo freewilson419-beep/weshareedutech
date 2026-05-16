@@ -456,7 +456,7 @@ export const adminGetBilling = createServerFn({ method: "GET" })
     const rowCounts: Record<string, number> = {};
     await Promise.all(
       tables.map(async (t) => {
-        const { count } = await supabaseAdmin.from(t).select("id", { count: "exact", head: true });
+        const { count } = await (supabaseAdmin.from(t as any) as any).select("id", { count: "exact", head: true });
         rowCounts[t] = count ?? 0;
       }),
     );
