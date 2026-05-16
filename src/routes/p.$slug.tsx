@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send } from "lucide-react";
+import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { MediaRender, type MediaItem } from "@/components/media-manager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
