@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send } from "lucide-react";
+import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { MediaRender, type MediaItem } from "@/components/media-manager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -99,8 +99,8 @@ function ArticleView() {
   const [post, setPost] = useState<Post | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [loading, setLoading] = useState(true);
-  const [claps, setClaps] = useState(0);
-  const [myClaps, setMyClaps] = useState(0);
+  const [likes, setLikes] = useState(0);
+  const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -115,8 +115,8 @@ function ArticleView() {
       }
       setPost(p as unknown as Post);
 
-      // record view
-      supabase.from("lesson_views").insert({
+      // record view (await so the request actually fires)
+      await supabase.from("lesson_views").insert({
         post_id: p.id,
         viewer_user_id: user?.id ?? null,
         referrer: typeof document !== "undefined" ? document.referrer : "",
@@ -128,9 +128,9 @@ function ArticleView() {
         supabase.from("comments").select("id,body,created_at,author_user_id").eq("post_id", p.id).order("created_at", { ascending: true }),
       ]);
       setAuthor(a as Author | null);
-      const total = (clapRows ?? []).reduce((s, r) => s + (r.count || 0), 0);
-      setClaps(total);
-      if (user) setMyClaps((clapRows ?? []).find((r) => r.user_id === user.id)?.count ?? 0);
+      // One like per user: count distinct rows
+      setLikes((clapRows ?? []).length);
+      if (user) setLiked(!!(clapRows ?? []).find((r) => r.user_id === user.id));
 
       if (cmts?.length) {
         const ids = Array.from(new Set(cmts.map((c) => c.author_user_id)));
@@ -183,13 +183,20 @@ function ArticleView() {
   const isAnon = !!post.is_anonymous;
   const aName = authorName(author, isAnon);
 
-  const clap = async () => {
-    if (!user) return toast.error("Sign in to clap");
-    if (myClaps >= 50) return;
-    const next = myClaps + 1;
-    setMyClaps(next);
-    setClaps((c) => c + 1);
-    await supabase.from("claps").upsert({ user_id: user.id, post_id: post.id, count: next, updated_at: new Date().toISOString() }, { onConflict: "user_id,post_id" });
+  const toggleLike = async () => {
+    if (!user) return toast.error("Sign in to like");
+    if (liked) {
+      setLiked(false);
+      setLikes((c) => Math.max(0, c - 1));
+      await supabase.from("claps").delete().eq("post_id", post.id).eq("user_id", user.id);
+    } else {
+      setLiked(true);
+      setLikes((c) => c + 1);
+      await supabase.from("claps").upsert(
+        { user_id: user.id, post_id: post.id, count: 1, updated_at: new Date().toISOString() },
+        { onConflict: "user_id,post_id" }
+      );
+    }
   };
 
   const toggleBookmark = async () => {
@@ -279,8 +286,8 @@ function ArticleView() {
 
         {/* Engagement bar */}
         <div className="mt-12 flex flex-wrap items-center justify-center gap-3 border-y py-4">
-          <Button variant={myClaps > 0 ? "default" : "outline"} onClick={clap}>
-            👏 {claps} {myClaps > 0 && <span className="ml-1 text-xs opacity-80">(+{myClaps})</span>}
+          <Button variant={liked ? "default" : "outline"} onClick={toggleLike} disabled={!user} title={!user ? "Sign in to like" : undefined}>
+            <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} /> {likes} {liked ? "Liked" : "Like"}
           </Button>
           <Button variant={bookmarked ? "default" : "outline"} onClick={toggleBookmark}>
             <Bookmark className="h-4 w-4" /> {bookmarked ? "Saved" : "Save"}
