@@ -385,3 +385,106 @@ export const adminSaveSetting = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+export const adminGetBilling = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const now = Date.now();
+    const since24h = new Date(now - 86_400_000).toISOString();
+    const since7d = new Date(now - 7 * 86_400_000).toISOString();
+    const since30d = new Date(now - 30 * 86_400_000).toISOString();
+
+    // Email totals (deduped by message_id, latest status)
+    const { data: emailRows } = await supabaseAdmin
+      .from("email_send_log")
+      .select("message_id,template_name,status,created_at,recipient_email")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    const latestByMsg = new Map<string, any>();
+    for (const r of emailRows ?? []) {
+      const key = (r as any).message_id ?? (r as any).id;
+      if (!latestByMsg.has(key)) latestByMsg.set(key, r);
+    }
+    const emails = [...latestByMsg.values()];
+    const emailStats = { sent: 0, failed: 0, suppressed: 0, pending: 0, last24h: 0, last7d: 0, last30d: 0, total: emails.length };
+    const byTemplate: Record<string, number> = {};
+    for (const e of emails) {
+      const s = (e.status || "").toLowerCase();
+      if (s === "sent") emailStats.sent++;
+      else if (s === "dlq" || s === "failed" || s === "bounced") emailStats.failed++;
+      else if (s === "suppressed") emailStats.suppressed++;
+      else if (s === "pending") emailStats.pending++;
+      const t = e.created_at;
+      if (t >= since24h) emailStats.last24h++;
+      if (t >= since7d) emailStats.last7d++;
+      if (t >= since30d) emailStats.last30d++;
+      byTemplate[e.template_name] = (byTemplate[e.template_name] ?? 0) + 1;
+    }
+    const recentEmails = emails.slice(0, 15);
+
+    // Storage buckets via raw SQL through PostgREST is not available; query storage.objects via service role
+    let storage: Array<{ bucket: string; files: number; bytes: number }> = [];
+    try {
+      const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+      for (const b of buckets ?? []) {
+        // Sum sizes by listing — capped at 1000 per call; aggregate across.
+        let files = 0; let bytes = 0;
+        let offset = 0;
+        while (true) {
+          const { data: objs } = await supabaseAdmin.storage.from(b.name).list("", { limit: 1000, offset });
+          if (!objs || objs.length === 0) break;
+          for (const o of objs) {
+            files++;
+            bytes += (o.metadata as any)?.size ?? 0;
+          }
+          if (objs.length < 1000) break;
+          offset += 1000;
+        }
+        storage.push({ bucket: b.name, files, bytes });
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // DB row counts
+    const tables = [
+      "profiles", "posts", "comments", "claps", "bookmarks", "lesson_views",
+      "notifications", "platform_announcements", "content_reports",
+      "email_send_log", "suppressed_emails", "reading_progress", "user_roles",
+    ];
+    const rowCounts: Record<string, number> = {};
+    await Promise.all(
+      tables.map(async (t) => {
+        const { count } = await supabaseAdmin.from(t).select("id", { count: "exact", head: true });
+        rowCounts[t] = count ?? 0;
+      }),
+    );
+
+    // Users
+    const { count: userCount } = await supabaseAdmin
+      .from("profiles").select("user_id", { count: "exact", head: true });
+    const { count: newUsers7d } = await supabaseAdmin
+      .from("profiles").select("user_id", { count: "exact", head: true }).gte("created_at", since7d);
+
+    // Lesson views
+    const { count: views24h } = await supabaseAdmin
+      .from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since24h);
+    const { count: views7d } = await supabaseAdmin
+      .from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since7d);
+    const { count: views30d } = await supabaseAdmin
+      .from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since30d);
+
+    // Suppressed emails
+    const { count: suppressedCount } = await supabaseAdmin
+      .from("suppressed_emails").select("id", { count: "exact", head: true });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      emails: { stats: emailStats, byTemplate, recent: recentEmails, suppressedCount: suppressedCount ?? 0 },
+      storage,
+      database: { rowCounts },
+      users: { total: userCount ?? 0, new7d: newUsers7d ?? 0 },
+      activity: { views24h: views24h ?? 0, views7d: views7d ?? 0, views30d: views30d ?? 0 },
+    };
+  });
