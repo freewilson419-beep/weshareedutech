@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tan
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, BarChart3, Users, BookOpen, Megaphone, Settings as SettingsIcon, FileText, Flag, LineChart, HelpCircle } from "lucide-react";
+import { Loader2, Shield, BarChart3, Users, BookOpen, Megaphone, Settings as SettingsIcon, FileText, Flag, LineChart, HelpCircle, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin")({
