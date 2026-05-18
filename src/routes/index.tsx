@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Clock, PenLine } from "lucide-react";
+import { ArrowRight, Bookmark, Clock, PenLine, BookOpen, Sparkles, Heart } from "lucide-react";
 
 interface FeedItem {
   id: string;
@@ -75,18 +75,16 @@ function PublicationHome() {
         counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1);
       });
 
-      const top5 = [...posts]
-        .sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
-        .slice(0, 5);
+      const ordered = [...posts].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0));
 
-      const authorIds = Array.from(new Set(top5.map((post) => post.author_user_id)));
+      const authorIds = Array.from(new Set(ordered.map((post) => post.author_user_id)));
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id,username,title,surname")
         .in("user_id", authorIds);
       const byId = new Map(profiles?.map((profile) => [profile.user_id, profile]) ?? []);
 
-      setItems(top5.map((post) => ({ ...post, author: byId.get(post.author_user_id) as FeedItem["author"] })));
+      setItems(ordered.map((post) => ({ ...post, author: byId.get(post.author_user_id) as FeedItem["author"] })));
       setLoading(false);
     })();
   }, []);
@@ -156,10 +154,10 @@ function PublicationHome() {
           <div className="container mx-auto px-4 sm:px-8">
             <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="mb-1 text-sm font-medium text-primary">Top 5 popular</p>
+                <p className="mb-1 text-sm font-medium text-primary">Published lessons</p>
                 <h2 className="text-2xl font-extrabold tracking-normal sm:text-3xl md:text-4xl">Read published lessons</h2>
                 <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                  The most-liked lessons from our community. Tap any title to read the full lesson.
+                  Lessons from our community. Tap any title to read the full lesson.
                 </p>
               </div>
               {session && (
@@ -174,33 +172,48 @@ function PublicationHome() {
             ) : items.length === 0 ? (
               <EmptyState signedIn={!!session} />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => <ArticleCard key={item.id} item={item} />)}
               </div>
             )}
           </div>
         </section>
 
-        <section className="py-12 sm:py-16">
-          <div className="container mx-auto max-w-5xl px-4 sm:px-8">
-            <h2 className="mb-8 text-center text-2xl font-extrabold sm:text-3xl">Why WeShare EduTech</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border bg-card p-6 shadow-sm">
-                <h3 className="mb-2 text-lg font-bold">Structured Lessons</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">Clear titles, goals, explanations, reflections and resources.</p>
+        <section className="py-16 sm:py-24">
+          <div className="container mx-auto max-w-6xl px-4 sm:px-8">
+            <div className="mb-12 text-center sm:mb-16">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">Why join us</p>
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">Why WeShare EduTech</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+                Built for participants who want to learn deeply by teaching what they know.
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-3">
+              <div className="rounded-2xl border bg-card p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <BookOpen className="h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">Structured Lessons</h3>
+                <p className="text-base leading-relaxed text-muted-foreground">Clear titles, goals, explanations, reflections and resources — every lesson follows a thoughtful structure.</p>
               </div>
-              <div className="rounded-2xl border bg-card p-6 shadow-sm">
-                <h3 className="mb-2 text-lg font-bold">Publish Your Knowledge</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">Any signed-in participant can publish a lesson and add a quiz link.</p>
+              <div className="rounded-2xl border bg-card p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">Publish Your Knowledge</h3>
+                <p className="text-base leading-relaxed text-muted-foreground">Any signed-in participant can publish a lesson, attach media, and add a quiz link for readers.</p>
               </div>
-              <div className="rounded-2xl border bg-card p-6 shadow-sm">
-                <h3 className="mb-2 text-lg font-bold">Engage and Save</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">Like, discuss and bookmark lessons that matter to you.</p>
+              <div className="rounded-2xl border bg-card p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Heart className="h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">Engage and Save</h3>
+                <p className="text-base leading-relaxed text-muted-foreground">Like, discuss and bookmark lessons that matter to you — build your own reading library.</p>
               </div>
             </div>
-            <div className="mt-8 text-center">
-              <Link to="/about-platform" className="text-sm font-medium text-primary hover:underline">
-                Learn more about this platform →
+            <div className="mt-10 text-center">
+              <Link to="/about-platform" className="inline-flex items-center gap-1 text-base font-medium text-primary hover:underline">
+                Learn more about this platform <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
