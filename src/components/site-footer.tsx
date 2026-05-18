@@ -17,6 +17,7 @@ export function SiteFooter() {
             <h4 className="mb-3 text-sm font-semibold">Platform</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/" className="hover:text-foreground">Home</Link></li>
+              <li><Link to="/about-platform" className="hover:text-foreground">About this Platform</Link></li>
               <li><Link to="/login" className="hover:text-foreground">Sign In</Link></li>
               <li><Link to="/signup" className="hover:text-foreground">Create account</Link></li>
             </ul>
