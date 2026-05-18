@@ -75,18 +75,16 @@ function PublicationHome() {
         counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1);
       });
 
-      const top5 = [...posts]
-        .sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
-        .slice(0, 5);
+      const ordered = [...posts].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0));
 
-      const authorIds = Array.from(new Set(top5.map((post) => post.author_user_id)));
+      const authorIds = Array.from(new Set(ordered.map((post) => post.author_user_id)));
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id,username,title,surname")
         .in("user_id", authorIds);
       const byId = new Map(profiles?.map((profile) => [profile.user_id, profile]) ?? []);
 
-      setItems(top5.map((post) => ({ ...post, author: byId.get(post.author_user_id) as FeedItem["author"] })));
+      setItems(ordered.map((post) => ({ ...post, author: byId.get(post.author_user_id) as FeedItem["author"] })));
       setLoading(false);
     })();
   }, []);
