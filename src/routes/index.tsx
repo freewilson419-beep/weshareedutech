@@ -123,15 +123,6 @@ function PublicationHome() {
               Read what others publish.
             </h1>
 
-            <div className="mb-8 flex justify-center">
-              <Link to={session ? "/dashboard" : "/signup"}>
-                <Button size="lg" className="h-12 px-8 text-base font-medium shadow-lg shadow-primary/20 sm:h-14 sm:text-lg">
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-
             <p className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-xl md:text-2xl">
               WeShare EduTech is a digital learning publication where participants publish structured lessons for everyone to read freely. Sign in to publish, comment, like, or bookmark.
             </p>
@@ -146,8 +137,9 @@ function PublicationHome() {
                 </Link>
               ) : (
                 <Link to="/signup">
-                  <Button size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
-                    Create Free Account
+                  <Button size="lg" className="h-12 w-full px-8 font-medium shadow-lg shadow-primary/20 sm:h-14 sm:w-auto sm:text-lg">
+                    Get Started
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
               )}
