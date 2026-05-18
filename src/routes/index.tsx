@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Clock, PenLine } from "lucide-react";
+import { ArrowRight, Bookmark, Clock, PenLine, BookOpen, Sparkles, Heart } from "lucide-react";
 
 interface FeedItem {
   id: string;
