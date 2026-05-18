@@ -19,6 +19,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as AupRouteImport } from './routes/aup'
+import { Route as AboutPlatformRouteImport } from './routes/about-platform'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
@@ -100,6 +101,11 @@ const CookiesRoute = CookiesRouteImport.update({
 const AupRoute = AupRouteImport.update({
   id: '/aup',
   path: '/aup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutPlatformRoute = AboutPlatformRouteImport.update({
+  id: '/about-platform',
+  path: '/about-platform',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -278,6 +284,7 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about-platform': typeof AboutPlatformRoute
   '/aup': typeof AupRoute
   '/cookies': typeof CookiesRoute
   '/help': typeof HelpRoute
@@ -321,6 +328,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about-platform': typeof AboutPlatformRoute
   '/aup': typeof AupRoute
   '/cookies': typeof CookiesRoute
   '/help': typeof HelpRoute
@@ -364,6 +372,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/about-platform': typeof AboutPlatformRoute
   '/aup': typeof AupRoute
   '/cookies': typeof CookiesRoute
   '/help': typeof HelpRoute
@@ -409,6 +418,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about-platform'
     | '/aup'
     | '/cookies'
     | '/help'
@@ -452,6 +462,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about-platform'
     | '/aup'
     | '/cookies'
     | '/help'
@@ -494,6 +505,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/about-platform'
     | '/aup'
     | '/cookies'
     | '/help'
@@ -539,6 +551,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AboutPlatformRoute: typeof AboutPlatformRoute
   AupRoute: typeof AupRoute
   CookiesRoute: typeof CookiesRoute
   HelpRoute: typeof HelpRoute
@@ -630,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/aup'
       fullPath: '/aup'
       preLoaderRoute: typeof AupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about-platform': {
+      id: '/about-platform'
+      path: '/about-platform'
+      fullPath: '/about-platform'
+      preLoaderRoute: typeof AboutPlatformRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -934,6 +954,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AboutPlatformRoute: AboutPlatformRoute,
   AupRoute: AupRoute,
   CookiesRoute: CookiesRoute,
   HelpRoute: HelpRoute,
@@ -957,13 +978,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
