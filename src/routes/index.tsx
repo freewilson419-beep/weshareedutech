@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, BookOpen, Bookmark, CheckCircle2, Clock, PenLine } from "lucide-react";
+import { ArrowRight, Bookmark, Clock, PenLine } from "lucide-react";
 
 interface FeedItem {
   id: string;
@@ -26,34 +26,13 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "WeShare EduTech — Learn by sharing" },
-      { name: "description", content: "A community learning publication where participants publish structured lessons that everyone can read freely. Sign in to publish, comment, clap, and bookmark." },
+      { name: "description", content: "A community learning publication where participants publish structured lessons that everyone can read freely. Sign in to publish, comment, like, and bookmark." },
       { property: "og:title", content: "WeShare EduTech — Learn by sharing" },
       { property: "og:description", content: "A community learning publication where participants publish structured lessons that everyone can read freely." },
       { property: "og:url", content: "https://weshareeduteach.name.ng/" },
       { property: "og:type", content: "website" },
     ],
     links: [{ rel: "canonical", href: "https://weshareeduteach.name.ng/" }],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "WeShare EduTech",
-          url: "https://weshareeduteach.name.ng/",
-          description: "A community learning publication where participants publish structured lessons.",
-        }),
-      },
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "WeShare EduTech",
-          url: "https://weshareeduteach.name.ng/",
-        }),
-      },
-    ],
   }),
   component: PublicationHome,
 });
@@ -78,33 +57,47 @@ function PublicationHome() {
         .not("published_at", "is", null)
         .eq("is_unlisted", false)
         .order("published_at", { ascending: false })
-        .limit(30);
+        .limit(60);
 
-      if (!posts) {
+      if (!posts || posts.length === 0) {
         setLoading(false);
         return;
       }
 
-      const authorIds = Array.from(new Set(posts.map((post) => post.author_user_id)));
+      const ids = posts.map((p) => p.id);
+      const { data: claps } = await supabase
+        .from("claps")
+        .select("post_id")
+        .in("post_id", ids);
+
+      const counts = new Map<string, number>();
+      (claps ?? []).forEach((c: { post_id: string }) => {
+        counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1);
+      });
+
+      const top5 = [...posts]
+        .sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
+        .slice(0, 5);
+
+      const authorIds = Array.from(new Set(top5.map((post) => post.author_user_id)));
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id,username,title,surname")
         .in("user_id", authorIds);
       const byId = new Map(profiles?.map((profile) => [profile.user_id, profile]) ?? []);
 
-      setItems(posts.map((post) => ({ ...post, author: byId.get(post.author_user_id) as FeedItem["author"] })));
+      setItems(top5.map((post) => ({ ...post, author: byId.get(post.author_user_id) as FeedItem["author"] })));
       setLoading(false);
     })();
   }, []);
 
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-background selection:bg-primary/10">
-      <header className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-8">
+      <header className="container mx-auto flex h-16 items-center justify-between px-4 sm:h-20 sm:px-8">
         <Link to="/" className="transition-opacity hover:opacity-80">
-          <Logo className="h-8 w-auto text-primary" />
+          <Logo className="h-7 w-auto text-primary sm:h-8" />
         </Link>
-        <nav className="flex items-center gap-3 sm:gap-4">
+        <nav className="flex items-center gap-2">
           {session ? (
             <>
               <Link to="/compose">
@@ -115,105 +108,66 @@ function PublicationHome() {
               </Link>
             </>
           ) : (
-            <>
-              <Link to="/login">
-                <Button variant="ghost" className="font-medium">Sign In</Button>
-              </Link>
-              <Link to="/signup">
-                <Button className="font-medium px-5 sm:px-6">Get Started</Button>
-              </Link>
-            </>
+            <Link to="/login">
+              <Button variant="ghost" className="font-medium">Sign In</Button>
+            </Link>
           )}
         </nav>
       </header>
 
       <main>
-        <section className="flex flex-col items-center justify-center px-4 pb-24 pt-16 sm:px-8 md:pb-32 md:pt-20">
+        <section className="px-4 pb-10 pt-6 sm:px-8 sm:pb-16 sm:pt-10">
           <div className="container mx-auto max-w-5xl text-center">
-            <div className="mb-8 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm text-primary">
-              <span className="mr-2 flex h-2 w-2 rounded-full bg-primary" />
-              Now open for every participant
-            </div>
-
-            <h1 className="mb-8 text-4xl font-extrabold leading-[1.1] tracking-normal text-foreground sm:text-5xl md:text-7xl">
+            <h1 className="mb-6 text-4xl font-extrabold leading-[1.1] tracking-normal text-foreground sm:text-5xl md:text-7xl">
               Learn by <span className="text-primary">sharing</span>.<br />
               Read what others publish.
             </h1>
 
-            <p className="mx-auto mb-12 max-w-3xl text-xl leading-relaxed text-muted-foreground md:text-2xl">
-              WeShare EduTeach is a digital learning publication where participants publish structured lessons for everyone to read freely. Sign in only when you want to publish, comment, clap, bookmark, or take an external quiz shared by the author.
+            <div className="mb-8 flex justify-center">
+              <Link to={session ? "/dashboard" : "/signup"}>
+                <Button size="lg" className="h-12 px-8 text-base font-medium shadow-lg shadow-primary/20 sm:h-14 sm:text-lg">
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+
+            <p className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-xl md:text-2xl">
+              WeShare EduTech is a digital learning publication where participants publish structured lessons for everyone to read freely. Sign in to publish, comment, like, or bookmark.
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
               {session ? (
                 <Link to="/compose">
-                  <Button size="lg" className="h-14 w-full px-8 text-lg font-medium shadow-lg shadow-primary/20 sm:w-auto">
+                  <Button size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
                     Publish a Lesson
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
               ) : (
                 <Link to="/signup">
-                  <Button size="lg" className="h-14 w-full px-8 text-lg font-medium shadow-lg shadow-primary/20 sm:w-auto">
+                  <Button size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
                     Create Free Account
-                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
               )}
-              <a href="#publications">
-                <Button variant="outline" size="lg" className="h-14 w-full px-8 text-lg font-medium sm:w-auto">
+              <a href="#publications" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
                   Browse Lessons
                 </Button>
               </a>
             </div>
           </div>
-
-          <div className="container mx-auto mt-32 max-w-6xl px-4 sm:px-8">
-            <div className="grid gap-8 md:grid-cols-3">
-              <div className="rounded-2xl border bg-card p-8 shadow-sm">
-                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <BookOpen className="h-6 w-6" />
-                </div>
-                <h3 className="mb-3 text-xl font-bold">Structured Lessons</h3>
-                <p className="leading-relaxed text-muted-foreground">
-                  Lessons are arranged with clear titles, goals, explanations, reflections, and helpful resources so readers know exactly what they are learning.
-                </p>
-              </div>
-
-              <div className="relative overflow-hidden rounded-2xl border bg-card p-8 shadow-sm">
-                <div className="absolute right-0 top-0 p-8 opacity-5">
-                  <PenLine className="h-32 w-32" />
-                </div>
-                <div className="relative z-10 mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <PenLine className="h-6 w-6" />
-                </div>
-                <h3 className="relative z-10 mb-3 text-xl font-bold">Publish Your Knowledge</h3>
-                <p className="relative z-10 leading-relaxed text-muted-foreground">
-                  Any signed-in participant can publish a lesson, add a quiz link from Google Forms, and make the lesson available on the public page.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border bg-card p-8 shadow-sm">
-                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <h3 className="mb-3 text-xl font-bold">Engage and Save</h3>
-                <p className="leading-relaxed text-muted-foreground">
-                  Readers can sign in to clap for lessons, join the discussion, bookmark useful posts, and let publishers understand real engagement.
-                </p>
-              </div>
-            </div>
-          </div>
         </section>
 
-        <section id="publications" className="border-t bg-muted/30 py-16 md:py-20">
+        <section id="publications" className="border-t bg-muted/30 py-12 sm:py-16">
           <div className="container mx-auto px-4 sm:px-8">
-            <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="mb-2 text-sm font-medium text-primary">Latest publications</p>
-                <h2 className="text-3xl font-extrabold tracking-normal md:text-5xl">Read published lessons</h2>
-                <p className="mt-4 max-w-2xl text-muted-foreground">
-                  These lessons are open to everyone. Click any title to read the full lesson without logging in.
+                <p className="mb-1 text-sm font-medium text-primary">Top 5 popular</p>
+                <h2 className="text-2xl font-extrabold tracking-normal sm:text-3xl md:text-4xl">Read published lessons</h2>
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+                  The most-liked lessons from our community. Tap any title to read the full lesson.
                 </p>
               </div>
               {session && (
@@ -224,14 +178,39 @@ function PublicationHome() {
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-24"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" /></div>
+              <div className="flex justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" /></div>
             ) : items.length === 0 ? (
               <EmptyState signedIn={!!session} />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {items.map((item) => <ArticleCard key={item.id} item={item} />)}
               </div>
             )}
+          </div>
+        </section>
+
+        <section className="py-12 sm:py-16">
+          <div className="container mx-auto max-w-5xl px-4 sm:px-8">
+            <h2 className="mb-8 text-center text-2xl font-extrabold sm:text-3xl">Why WeShare EduTech</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <h3 className="mb-2 text-lg font-bold">Structured Lessons</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">Clear titles, goals, explanations, reflections and resources.</p>
+              </div>
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <h3 className="mb-2 text-lg font-bold">Publish Your Knowledge</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">Any signed-in participant can publish a lesson and add a quiz link.</p>
+              </div>
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <h3 className="mb-2 text-lg font-bold">Engage and Save</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">Like, discuss and bookmark lessons that matter to you.</p>
+              </div>
+            </div>
+            <div className="mt-8 text-center">
+              <Link to="/about-platform" className="text-sm font-medium text-primary hover:underline">
+                Learn more about this platform →
+              </Link>
+            </div>
           </div>
         </section>
       </main>
