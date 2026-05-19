@@ -272,6 +272,7 @@ function ArticleView() {
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
           <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
           <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
+          <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} /></div>
         </div>
 
         {post.quiz_url && (
