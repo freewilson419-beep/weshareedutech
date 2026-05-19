@@ -269,8 +269,8 @@ function ArticleView() {
           <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
-          <Section label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
-          <Section label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
+          <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
+          <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
         </div>
 
         {post.quiz_url && (
