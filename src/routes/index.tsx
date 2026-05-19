@@ -229,26 +229,57 @@ function PublicationHome() {
 }
 
 function ArticleCard({ item }: { item: FeedItem }) {
+  const lessonUrl = `/p/${item.slug}`;
+
+  const onShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = typeof window !== "undefined" ? `${window.location.origin}${lessonUrl}` : lessonUrl;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: item.title, text: item.excerpt || item.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied");
+      }
+    } catch {
+      /* user cancelled */
+    }
+  };
+
   return (
-    <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
-      <article className="flex h-full gap-3 overflow-hidden rounded-lg border bg-card p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:flex-col sm:gap-0 sm:p-0">
-        {item.cover_image_url ? (
-          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted sm:h-auto sm:w-full sm:rounded-none">
-            <img src={item.cover_image_url} alt={item.title} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02] sm:aspect-[16/10]" />
-          </div>
-        ) : (
-          <div className="h-20 w-20 shrink-0 rounded-md bg-primary/10 sm:h-auto sm:w-full sm:rounded-none sm:aspect-[16/10]" />
-        )}
-        <div className="min-w-0 flex-1 sm:p-4">
-          <div className="mb-1.5 flex flex-wrap gap-1 sm:mb-2">
-            {item.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>)}
-          </div>
-          <h3 className="line-clamp-2 text-sm font-bold leading-snug group-hover:text-primary sm:text-base">{item.title}</h3>
-          <p className="mt-1 line-clamp-2 hidden text-xs text-muted-foreground sm:block">{item.excerpt}</p>
-          <Meta item={item} className="mt-2" />
+    <article className="flex h-full flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
+        <div className="mb-2 flex flex-wrap gap-1">
+          {item.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>)}
         </div>
-      </article>
-    </Link>
+        <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-primary">{item.title}</h3>
+        {item.excerpt && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.excerpt}</p>}
+        <Meta item={item} className="mt-2" />
+      </Link>
+
+      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3 text-xs">
+        <Link to="/p/$slug" params={{ slug: item.slug }} hash="comments" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+          <MessageCircle className="h-3.5 w-3.5" /> Comment
+        </Link>
+        <button type="button" onClick={onShare} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+          <Share2 className="h-3.5 w-3.5" /> Share
+        </button>
+        <Link to="/p/$slug" params={{ slug: item.slug }} hash="reflection" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+          <Lightbulb className="h-3.5 w-3.5" /> Reflect
+        </Link>
+        {item.learn_to_teach?.trim() && (
+          <Link to="/p/$slug" params={{ slug: item.slug }} hash="learn-to-teach" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+            <GraduationCap className="h-3.5 w-3.5" /> Learn to Teach
+          </Link>
+        )}
+        {item.quiz_url && (
+          <a href={item.quiz_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+            <FileCheck className="h-3.5 w-3.5" /> Take Exam
+          </a>
+        )}
+      </div>
+    </article>
   );
 }
 
