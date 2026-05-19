@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { ReportLessonButton } from "@/components/report-lesson-button";
 import { SiteFooter } from "@/components/site-footer";
+import { VoiceRecorder } from "@/components/voice-recorder";
 
 interface Post {
   id: string;
