@@ -269,8 +269,8 @@ function ArticleView() {
           <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
-          <Section label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
-          <Section label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
+          <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
+          <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
         </div>
 
         {post.quiz_url && (
@@ -296,7 +296,7 @@ function ArticleView() {
         </div>
 
         {/* Comments */}
-        <section className="mt-12">
+        <section id="comments" className="mt-12 scroll-mt-20">
           <h3 className="font-serif text-2xl">Discussion ({comments.length})</h3>
           {user ? (
             <div className="mt-4 space-y-2">
@@ -335,12 +335,12 @@ function ArticleView() {
   );
 }
 
-function Section({ label, body, media }: { label: string; body: string; media?: MediaItem[] }) {
+function Section({ id, label, body, media }: { id?: string; label: string; body: string; media?: MediaItem[] }) {
   const hasBody = !!body?.trim();
   const hasMedia = !!media?.length;
   if (!hasBody && !hasMedia) return null;
   return (
-    <section>
+    <section id={id} className={id ? "scroll-mt-20" : undefined}>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
       {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
       {hasMedia && <MediaRender items={media!} />}
