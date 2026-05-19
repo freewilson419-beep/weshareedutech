@@ -335,12 +335,12 @@ function ArticleView() {
   );
 }
 
-function Section({ label, body, media }: { label: string; body: string; media?: MediaItem[] }) {
+function Section({ id, label, body, media }: { id?: string; label: string; body: string; media?: MediaItem[] }) {
   const hasBody = !!body?.trim();
   const hasMedia = !!media?.length;
   if (!hasBody && !hasMedia) return null;
   return (
-    <section>
+    <section id={id} className={id ? "scroll-mt-20" : undefined}>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
       {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
       {hasMedia && <MediaRender items={media!} />}
