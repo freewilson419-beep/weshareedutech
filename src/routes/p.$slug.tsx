@@ -296,7 +296,7 @@ function ArticleView() {
         </div>
 
         {/* Comments */}
-        <section className="mt-12">
+        <section id="comments" className="mt-12 scroll-mt-20">
           <h3 className="font-serif text-2xl">Discussion ({comments.length})</h3>
           {user ? (
             <div className="mt-4 space-y-2">
