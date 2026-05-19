@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Clock, PenLine, BookOpen, Sparkles, Heart } from "lucide-react";
+import { ArrowRight, Bookmark, Clock, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Lightbulb, GraduationCap, FileCheck } from "lucide-react";
+import { toast } from "sonner";
 
 interface FeedItem {
   id: string;
@@ -19,6 +20,8 @@ interface FeedItem {
   published_at: string;
   author_user_id: string;
   is_anonymous: boolean;
+  learn_to_teach: string | null;
+  quiz_url: string | null;
   author?: { username: string; title: string; surname: string };
 }
 
