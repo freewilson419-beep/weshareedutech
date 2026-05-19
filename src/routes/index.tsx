@@ -56,7 +56,7 @@ function PublicationHome() {
     (async () => {
       const { data: posts } = await supabase
         .from("posts")
-        .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
+        .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous,learn_to_teach,quiz_url")
         .not("published_at", "is", null)
         .eq("is_unlisted", false)
         .order("published_at", { ascending: false })
