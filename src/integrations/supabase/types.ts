@@ -705,6 +705,42 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_submissions: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          file_size_bytes: number
+          id: string
+          mime_type: string
+          note: string
+          post_id: string
+          storage_path: string
+          student_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          file_size_bytes?: number
+          id?: string
+          mime_type?: string
+          note?: string
+          post_id: string
+          storage_path: string
+          student_user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          file_size_bytes?: number
+          id?: string
+          mime_type?: string
+          note?: string
+          post_id?: string
+          storage_path?: string
+          student_user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
