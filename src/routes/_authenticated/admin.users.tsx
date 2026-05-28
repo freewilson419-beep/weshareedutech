@@ -66,6 +66,33 @@ function AdminUsers() {
     }
   };
 
+  const onResetEdit = async (userId: string, name: string) => {
+    try {
+      await resetEditFn({ data: { userId } });
+      toast.success(`${name} can change their username again`);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    }
+  };
+
+  const onSaveUsername = async () => {
+    if (!editing) return;
+    const v = newUsername.trim();
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(v)) return toast.error("3–30 chars; letters, numbers, . _ -");
+    setSavingUname(true);
+    try {
+      await setUsernameFn({ data: { userId: editing.userId, username: v } });
+      toast.success("Username updated");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    } finally {
+      setSavingUname(false);
+    }
+  };
+
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
   return (
