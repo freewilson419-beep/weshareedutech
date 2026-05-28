@@ -171,6 +171,25 @@ function AdminUsers() {
         })}
         {filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No users match.</p>}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(v) => { if (!v) setEditing(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set username for {editing?.name}</DialogTitle>
+            <DialogDescription>
+              This overrides the user's current username. It does not consume their one free change.
+            </DialogDescription>
+          </DialogHeader>
+          <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value.replace(/\s+/g, ""))} placeholder="new-username" maxLength={30} />
+          <p className="text-xs text-muted-foreground">3–30 chars · letters, numbers, dot, underscore, dash</p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={onSaveUsername} disabled={savingUname}>
+              {savingUname ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
