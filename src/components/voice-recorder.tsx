@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Mic, Square, Trash2, Upload, Loader2, FileAudio, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Mic, Square, Trash2, Upload, Loader2, FileAudio, Users, ChevronDown, ChevronUp, Sparkles, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { gradeAllPending, releaseGrades } from "@/lib/grading.functions";
 
 interface Submission {
   id: string;
