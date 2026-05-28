@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, Clock, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings, Heart } from "lucide-react";
 import { authorName, initialsFor } from "@/lib/author-display";
+import { MyGrades } from "@/components/my-grades";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -255,6 +256,8 @@ function Dashboard() {
           )}
         </div>
       )}
+
+      <MyGrades />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">

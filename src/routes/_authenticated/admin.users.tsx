@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Search, Trash2, RefreshCcw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock } from "lucide-react";
 import { adminListUsers, adminSetUserRole, adminDeleteUser } from "@/lib/admin.functions";
+import { adminResetUsernameEdit, adminSetUsername } from "@/lib/account.functions";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,8 +27,13 @@ function AdminUsers() {
   const list = useServerFn(adminListUsers);
   const setRole = useServerFn(adminSetUserRole);
   const del = useServerFn(adminDeleteUser);
+  const resetEditFn = useServerFn(adminResetUsernameEdit);
+  const setUsernameFn = useServerFn(adminSetUsername);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<{ userId: string; name: string; current: string } | null>(null);
+  const [newUsername, setNewUsername] = useState("");
+  const [savingUname, setSavingUname] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
 
@@ -56,6 +63,33 @@ function AdminUsers() {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const onResetEdit = async (userId: string, name: string) => {
+    try {
+      await resetEditFn({ data: { userId } });
+      toast.success(`${name} can change their username again`);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    }
+  };
+
+  const onSaveUsername = async () => {
+    if (!editing) return;
+    const v = newUsername.trim();
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(v)) return toast.error("3–30 chars; letters, numbers, . _ -");
+    setSavingUname(true);
+    try {
+      await setUsernameFn({ data: { userId: editing.userId, username: v } });
+      toast.success("Username updated");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    } finally {
+      setSavingUname(false);
     }
   };
 
@@ -92,9 +126,18 @@ function AdminUsers() {
                   </div>
                   <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {u.department || "—"} · Joined {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
+                    @{u.username || "—"} · {u.department || "—"} · Joined {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
+                    {(u.username_edits_used ?? 0) >= 1 && <span className="ml-1 text-amber-600">(used username edit)</span>}
                   </p>
                 </div>
+                <Button variant="ghost" size="icon" title="Edit username" onClick={() => { setEditing({ userId: u.user_id, name, current: u.username || "" }); setNewUsername(u.username || ""); }}>
+                  <AtSign className="h-4 w-4" />
+                </Button>
+                {(u.username_edits_used ?? 0) >= 1 && (
+                  <Button variant="ghost" size="icon" title="Allow user to change their username again" onClick={() => onResetEdit(u.user_id, name)}>
+                    <Unlock className="h-4 w-4" />
+                  </Button>
+                )}
                 <Select value={u.role} onValueChange={(v) => onRoleChange(u.user_id, v)} disabled={isSelf}>
                   <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -128,6 +171,25 @@ function AdminUsers() {
         })}
         {filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No users match.</p>}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(v) => { if (!v) setEditing(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set username for {editing?.name}</DialogTitle>
+            <DialogDescription>
+              This overrides the user's current username. It does not consume their one free change.
+            </DialogDescription>
+          </DialogHeader>
+          <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value.replace(/\s+/g, ""))} placeholder="new-username" maxLength={30} />
+          <p className="text-xs text-muted-foreground">3–30 chars · letters, numbers, dot, underscore, dash</p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={onSaveUsername} disabled={savingUname}>
+              {savingUname ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
