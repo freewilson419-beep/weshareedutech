@@ -482,6 +482,7 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string
+          username_edits_used: number
           whatsapp_number: string
         }
         Insert: {
@@ -502,6 +503,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           username?: string
+          username_edits_used?: number
           whatsapp_number?: string
         }
         Update: {
@@ -522,6 +524,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string
+          username_edits_used?: number
           whatsapp_number?: string
         }
         Relationships: []
@@ -707,37 +710,64 @@ export type Database = {
       }
       voice_submissions: {
         Row: {
+          accuracy_score: number | null
+          ai_feedback: string
+          clarity_score: number | null
+          completeness_score: number | null
           created_at: string
           duration_seconds: number
           file_size_bytes: number
+          graded_at: string | null
+          grading_error: string
           id: string
           mime_type: string
           note: string
           post_id: string
+          released_at: string | null
           storage_path: string
           student_user_id: string
+          total_score: number | null
+          transcript: string
         }
         Insert: {
+          accuracy_score?: number | null
+          ai_feedback?: string
+          clarity_score?: number | null
+          completeness_score?: number | null
           created_at?: string
           duration_seconds?: number
           file_size_bytes?: number
+          graded_at?: string | null
+          grading_error?: string
           id?: string
           mime_type?: string
           note?: string
           post_id: string
+          released_at?: string | null
           storage_path: string
           student_user_id: string
+          total_score?: number | null
+          transcript?: string
         }
         Update: {
+          accuracy_score?: number | null
+          ai_feedback?: string
+          clarity_score?: number | null
+          completeness_score?: number | null
           created_at?: string
           duration_seconds?: number
           file_size_bytes?: number
+          graded_at?: string | null
+          grading_error?: string
           id?: string
           mime_type?: string
           note?: string
           post_id?: string
+          released_at?: string | null
           storage_path?: string
           student_user_id?: string
+          total_score?: number | null
+          transcript?: string
         }
         Relationships: []
       }
