@@ -27,8 +27,13 @@ function AdminUsers() {
   const list = useServerFn(adminListUsers);
   const setRole = useServerFn(adminSetUserRole);
   const del = useServerFn(adminDeleteUser);
+  const resetEditFn = useServerFn(adminResetUsernameEdit);
+  const setUsernameFn = useServerFn(adminSetUsername);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<{ userId: string; name: string; current: string } | null>(null);
+  const [newUsername, setNewUsername] = useState("");
+  const [savingUname, setSavingUname] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
 
