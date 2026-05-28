@@ -97,6 +97,10 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
   const [allSubs, setAllSubs] = useState<Submission[] | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [allLoading, setAllLoading] = useState(false);
+  const [grading, setGrading] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const gradeAllFn = useServerFn(gradeAllPending);
+  const releaseFn = useServerFn(releaseGrades);
 
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
