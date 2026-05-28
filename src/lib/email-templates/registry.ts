@@ -10,7 +10,9 @@ export interface TemplateEntry {
 }
 
 import { template as announcementTemplate } from './announcement'
+import { template as gradeReleasedTemplate } from './grade-released'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   announcement: announcementTemplate,
+  grade_released: gradeReleasedTemplate,
 }
