@@ -126,9 +126,18 @@ function AdminUsers() {
                   </div>
                   <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {u.department || "—"} · Joined {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
+                    @{u.username || "—"} · {u.department || "—"} · Joined {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
+                    {(u.username_edits_used ?? 0) >= 1 && <span className="ml-1 text-amber-600">(used username edit)</span>}
                   </p>
                 </div>
+                <Button variant="ghost" size="icon" title="Edit username" onClick={() => { setEditing({ userId: u.user_id, name, current: u.username || "" }); setNewUsername(u.username || ""); }}>
+                  <AtSign className="h-4 w-4" />
+                </Button>
+                {(u.username_edits_used ?? 0) >= 1 && (
+                  <Button variant="ghost" size="icon" title="Allow user to change their username again" onClick={() => onResetEdit(u.user_id, name)}>
+                    <Unlock className="h-4 w-4" />
+                  </Button>
+                )}
                 <Select value={u.role} onValueChange={(v) => onRoleChange(u.user_id, v)} disabled={isSelf}>
                   <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
