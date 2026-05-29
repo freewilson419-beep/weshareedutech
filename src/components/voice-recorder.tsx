@@ -159,7 +159,7 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
     setAllLoading(true);
     const { data, error } = await supabase
       .from("voice_submissions")
-      .select("id,storage_path,duration_seconds,file_size_bytes,created_at,student_user_id")
+      .select("id,storage_path,duration_seconds,file_size_bytes,created_at,student_user_id,clarity_score,accuracy_score,completeness_score,total_score,ai_feedback,graded_at,released_at,grading_error")
       .eq("post_id", postId)
       .order("created_at", { ascending: false });
     if (error) { toast.error(error.message); setAllLoading(false); return; }
