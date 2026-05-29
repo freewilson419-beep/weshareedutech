@@ -279,10 +279,20 @@ function ArticleView() {
           <div className="mt-12 rounded-lg border bg-card p-6 text-center">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">External quiz</p>
             <h3 className="mt-2 font-serif text-2xl">Test your understanding</h3>
-            <p className="mt-2 text-sm text-muted-foreground">The author has attached an external quiz for this lesson.</p>
-            <a href={post.quiz_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
-              <Button>Take the quiz <ExternalLink className="h-4 w-4" /></Button>
-            </a>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {user
+                ? "Make sure you've completed the Learn-to-Teach voice note above before you take the quiz."
+                : "Sign in first — quizzes are only available to members who've engaged with the lesson."}
+            </p>
+            {user ? (
+              <a href={post.quiz_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
+                <Button>Take the quiz <ExternalLink className="h-4 w-4" /></Button>
+              </a>
+            ) : (
+              <Link to="/login" className="mt-4 inline-flex">
+                <Button variant="outline">Sign in to take the quiz</Button>
+              </Link>
+            )}
           </div>
         )}
 
