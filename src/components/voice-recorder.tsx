@@ -19,11 +19,21 @@ interface Submission {
   student_user_id?: string;
   signed_url?: string;
   student_name?: string;
+  clarity_score?: number | null;
+  accuracy_score?: number | null;
+  completeness_score?: number | null;
+  total_score?: number | null;
+  ai_feedback?: string | null;
+  graded_at?: string | null;
+  released_at?: string | null;
+  grading_error?: string | null;
 }
 
 const MAX_SECONDS = 300; // 5 min cap per recording
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB hard cap
+const MAX_BYTES = 8 * 1024 * 1024; // 8 MB hard cap (was 10)
 const MAX_UPLOAD_INPUT = 50 * 1024 * 1024; // 50 MB before-compression cap
+// Files at or below this are already small enough to upload as-is (skip slow recompress)
+const FAST_PATH_BYTES = 800 * 1024; // 800 KB
 
 function fmtTime(s: number) {
   const m = Math.floor(s / 60);
