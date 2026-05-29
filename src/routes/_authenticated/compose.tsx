@@ -157,7 +157,9 @@ function Compose() {
         <h1 className="font-serif text-3xl">{postId ? "Edit lesson" : "New lesson"}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => save(false)}><Save className="h-4 w-4" /> Save draft</Button>
-          <Button onClick={() => save(true)}><Send className="h-4 w-4" /> Publish</Button>
+          <Button onClick={() => { if (!form.title.trim()) return toast.error("Add a title first"); setAgreed(false); setShowPublishAgreement(true); }}>
+            <Send className="h-4 w-4" /> Publish
+          </Button>
         </div>
       </div>
 
