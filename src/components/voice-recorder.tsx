@@ -426,28 +426,91 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
             {showAll ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {showAll && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
               {allLoading ? (
                 <p className="text-xs text-muted-foreground">Loading…</p>
               ) : !allSubs || allSubs.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No submissions yet.</p>
               ) : (
-                <ul className="space-y-2">
-                  {allSubs.map((s) => (
-                    <li key={s.id} className="flex flex-wrap items-center gap-3 rounded-md border bg-background p-3">
-                      <div className="w-full text-xs font-medium">{s.student_name}</div>
-                      <audio src={s.signed_url} controls className="h-9 max-w-full" />
-                      <div className="flex-1 text-xs text-muted-foreground">
-                        {fmtTime(s.duration_seconds)} · {fmtSize(s.file_size_bytes)} · {new Date(s.created_at).toLocaleString()}
-                      </div>
-                      {isAdmin && (
-                        <Button variant="ghost" size="sm" onClick={() => deleteSub(s, true)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3">
+                    <p className="mr-auto text-xs text-muted-foreground">
+                      {allSubs.filter((x) => !x.graded_at).length} ungraded · {allSubs.filter((x) => x.graded_at && !x.released_at).length} ready to release · {allSubs.filter((x) => x.released_at).length} released
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={grading || allSubs.every((x) => !!x.graded_at)}
+                      onClick={async () => {
+                        setGrading(true);
+                        try {
+                          const res = await gradeAllFn({ data: { postId } });
+                          toast.success(`AI graded ${res.graded} · ${res.failed} failed`);
+                          await loadAll();
+                        } catch (e) { toast.error(e instanceof Error ? e.message : "Grading failed"); }
+                        finally { setGrading(false); }
+                      }}
+                    >
+                      {grading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Grade all pending with AI
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={releasing || !allSubs.some((x) => x.graded_at && !x.released_at)}
+                      onClick={async () => {
+                        setReleasing(true);
+                        try {
+                          const res = await releaseFn({ data: { postId } });
+                          toast.success(`Released ${res.released} · ${res.emailsQueued} emails queued`);
+                          await loadAll();
+                        } catch (e) { toast.error(e instanceof Error ? e.message : "Release failed"); }
+                        finally { setReleasing(false); }
+                      }}
+                    >
+                      {releasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Release scores & email students
+                    </Button>
+                  </div>
+
+                  <ul className="space-y-2">
+                    {allSubs.map((s) => (
+                      <li key={s.id} className="space-y-2 rounded-md border bg-background p-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="text-xs font-medium">{s.student_name}</div>
+                          {s.released_at ? (
+                            <Badge variant="default" className="text-[10px]">Released</Badge>
+                          ) : s.graded_at ? (
+                            <Badge variant="secondary" className="text-[10px]">Graded — awaiting release</Badge>
+                          ) : s.grading_error ? (
+                            <Badge variant="destructive" className="text-[10px]">Grading error</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">Ungraded</Badge>
+                          )}
+                          <audio src={s.signed_url} controls className="h-9 max-w-full" />
+                          <div className="flex-1 text-xs text-muted-foreground">
+                            {fmtTime(s.duration_seconds)} · {fmtSize(s.file_size_bytes)} · {new Date(s.created_at).toLocaleString()}
+                          </div>
+                          {isAdmin && (
+                            <Button variant="ghost" size="sm" onClick={() => deleteSub(s, true)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {s.graded_at && (
+                          <div className="rounded bg-muted/40 p-2 text-xs">
+                            <div className="font-medium">
+                              Score: {s.total_score ?? 0}/30 — Clarity {s.clarity_score ?? 0}/10 · Accuracy {s.accuracy_score ?? 0}/10 · Completeness {s.completeness_score ?? 0}/10
+                            </div>
+                            {s.ai_feedback && <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{s.ai_feedback}</p>}
+                          </div>
+                        )}
+                        {s.grading_error && (
+                          <p className="text-xs text-destructive">{s.grading_error}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           )}
