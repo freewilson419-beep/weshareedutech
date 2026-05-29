@@ -235,11 +235,28 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
       return toast.error("Please pick an audio file");
     }
     if (file.size > MAX_UPLOAD_INPUT) return toast.error("File too large (max 50 MB)");
+
+    // Fast path: small + already a compressed format → skip the slow realtime re-encode
+    const isCompressed = /audio\/(webm|ogg|mp4|aac|mpeg)/i.test(file.type) || /\.(mp3|m4a|webm|ogg|opus|aac)$/i.test(file.name);
+    if (isCompressed && file.size <= FAST_PATH_BYTES) {
+      setBlob(file);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(file));
+      try {
+        const a = new Audio();
+        a.src = URL.createObjectURL(file);
+        await new Promise<void>((res) => { a.onloadedmetadata = () => res(); a.onerror = () => res(); });
+        setElapsed(Math.round(a.duration || 0));
+      } catch { /* ignore */ }
+      toast.success(`Ready ${fmtSize(file.size)} — uploading without re-encoding`);
+      return;
+    }
+
     setCompressing(true);
     try {
       const { blob: compressed, durationSec } = await compressAudio(file);
       if (compressed.size > MAX_BYTES) {
-        toast.error("Compressed file still too large (max 10 MB). Try a shorter clip.");
+        toast.error("Compressed file still too large (max 8 MB). Try a shorter clip.");
       } else {
         setBlob(compressed);
         setElapsed(durationSec);
