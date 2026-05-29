@@ -41,6 +41,7 @@ function Compose() {
     title: "", excerpt: "", cover_image_url: "", tags: "",
     goal: "", intro_slide: "", body_slide: "", conclusion_slide: "",
     reflection: "", learn_to_teach: "", quiz_url: "",
+  });
   const [showPublishAgreement, setShowPublishAgreement] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [publishing, setPublishing] = useState(false);
