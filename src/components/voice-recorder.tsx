@@ -193,7 +193,7 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
         : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
         : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4"
         : "";
-      const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined);
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 28000 } : undefined);
       chunksRef.current = [];
       rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
       rec.onstop = () => {
