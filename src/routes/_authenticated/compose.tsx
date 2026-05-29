@@ -11,6 +11,11 @@ import { toast } from "sonner";
 import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/compose")({
   validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) || undefined }),
