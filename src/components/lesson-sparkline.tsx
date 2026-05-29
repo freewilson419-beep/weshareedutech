@@ -9,11 +9,22 @@ export function LessonSparkline({ postId, days = 14 }: { postId: string; days?: 
   useEffect(() => {
     (async () => {
       const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      // Accurate total (not capped by the 1000-row default)
+      const { count } = await supabase
+        .from("lesson_views")
+        .select("id", { count: "exact", head: true })
+        .eq("post_id", postId)
+        .gte("created_at", since);
+      setTotal(count ?? 0);
+
+      // For the spark, fetch up to 10k recent timestamps (more than enough for 14d window)
       const { data: views } = await supabase
         .from("lesson_views")
         .select("created_at")
         .eq("post_id", postId)
-        .gte("created_at", since);
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(10000);
 
       const buckets = new Map<string, number>();
       for (let i = days - 1; i >= 0; i--) {
@@ -25,9 +36,7 @@ export function LessonSparkline({ postId, days = 14 }: { postId: string; days?: 
         const key = (v.created_at as string).slice(0, 10);
         if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
       });
-      const arr = Array.from(buckets.entries()).map(([d, v]) => ({ d, v }));
-      setData(arr);
-      setTotal(arr.reduce((s, x) => s + x.v, 0));
+      setData(Array.from(buckets.entries()).map(([d, v]) => ({ d, v })));
     })();
   }, [postId, days]);
 
