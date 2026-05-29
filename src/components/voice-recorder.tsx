@@ -76,7 +76,7 @@ async function compressAudio(file: Blob): Promise<{ blob: Blob; durationSec: num
     : MediaRecorder.isTypeSupported("audio/webm")
     ? "audio/webm"
     : "audio/mp4";
-  const rec = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: 32000 });
+  const rec = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: 24000 });
   const chunks: BlobPart[] = [];
 
   return new Promise((resolve, reject) => {
