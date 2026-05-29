@@ -35,7 +35,9 @@ function AuthLayout() {
       setIsAdmin(!!roles?.some((r) => r.role === "admin"));
       setProfile(prof as typeof profile);
       setProfileChecked(true);
-      if (prof && !prof.is_complete && window.location.pathname !== "/complete-profile") {
+      // Force complete-profile when profile is missing OR incomplete (Google sign-ups often skip it)
+      const incomplete = !prof || !prof.is_complete;
+      if (incomplete && window.location.pathname !== "/complete-profile") {
         navigate({ to: "/complete-profile", replace: true });
       }
     })();
