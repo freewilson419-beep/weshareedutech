@@ -11,6 +11,11 @@ import { toast } from "sonner";
 import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/compose")({
   validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) || undefined }),
@@ -37,6 +42,9 @@ function Compose() {
     goal: "", intro_slide: "", body_slide: "", conclusion_slide: "",
     reflection: "", learn_to_teach: "", quiz_url: "",
   });
+  const [showPublishAgreement, setShowPublishAgreement] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isUnlisted, setIsUnlisted] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -149,7 +157,9 @@ function Compose() {
         <h1 className="font-serif text-3xl">{postId ? "Edit lesson" : "New lesson"}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => save(false)}><Save className="h-4 w-4" /> Save draft</Button>
-          <Button onClick={() => save(true)}><Send className="h-4 w-4" /> Publish</Button>
+          <Button onClick={() => { if (!form.title.trim()) return toast.error("Add a title first"); setAgreed(false); setShowPublishAgreement(true); }}>
+            <Send className="h-4 w-4" /> Publish
+          </Button>
         </div>
       </div>
 
@@ -253,6 +263,45 @@ function Compose() {
           </div>
         )}
       </CardContent></Card>
+
+      <AlertDialog open={showPublishAgreement} onOpenChange={setShowPublishAgreement}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publisher's declaration</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Before this lesson goes live, please confirm:</p>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>The content is original or properly attributed — no plagiarism.</li>
+                  <li>It does not contain hateful, defamatory, or unlawful material.</li>
+                  <li>Any images, audio, or media you've added are yours to share.</li>
+                  <li>You take full responsibility for the accuracy of the information.</li>
+                  <li>You allow WeShare EduTech to display, distribute, and moderate this lesson, and to remove it if it violates our terms.</li>
+                </ul>
+                <label className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3">
+                  <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} className="mt-0.5" />
+                  <span>I have read and accept these terms, and I claim responsibility for this lesson's content.</span>
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publishing}>Not yet</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!agreed || publishing}
+              onClick={async (e) => {
+                e.preventDefault();
+                setPublishing(true);
+                try { await save(true); setShowPublishAgreement(false); }
+                finally { setPublishing(false); }
+              }}
+            >
+              {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              I agree — publish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

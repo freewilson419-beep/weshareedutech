@@ -19,11 +19,21 @@ interface Submission {
   student_user_id?: string;
   signed_url?: string;
   student_name?: string;
+  clarity_score?: number | null;
+  accuracy_score?: number | null;
+  completeness_score?: number | null;
+  total_score?: number | null;
+  ai_feedback?: string | null;
+  graded_at?: string | null;
+  released_at?: string | null;
+  grading_error?: string | null;
 }
 
 const MAX_SECONDS = 300; // 5 min cap per recording
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB hard cap
+const MAX_BYTES = 8 * 1024 * 1024; // 8 MB hard cap (was 10)
 const MAX_UPLOAD_INPUT = 50 * 1024 * 1024; // 50 MB before-compression cap
+// Files at or below this are already small enough to upload as-is (skip slow recompress)
+const FAST_PATH_BYTES = 800 * 1024; // 800 KB
 
 function fmtTime(s: number) {
   const m = Math.floor(s / 60);
@@ -66,7 +76,7 @@ async function compressAudio(file: Blob): Promise<{ blob: Blob; durationSec: num
     : MediaRecorder.isTypeSupported("audio/webm")
     ? "audio/webm"
     : "audio/mp4";
-  const rec = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: 32000 });
+  const rec = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: 24000 });
   const chunks: BlobPart[] = [];
 
   return new Promise((resolve, reject) => {
@@ -149,7 +159,7 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
     setAllLoading(true);
     const { data, error } = await supabase
       .from("voice_submissions")
-      .select("id,storage_path,duration_seconds,file_size_bytes,created_at,student_user_id")
+      .select("id,storage_path,duration_seconds,file_size_bytes,created_at,student_user_id,clarity_score,accuracy_score,completeness_score,total_score,ai_feedback,graded_at,released_at,grading_error")
       .eq("post_id", postId)
       .order("created_at", { ascending: false });
     if (error) { toast.error(error.message); setAllLoading(false); return; }
@@ -183,7 +193,7 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
         : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
         : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4"
         : "";
-      const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined);
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 28000 } : undefined);
       chunksRef.current = [];
       rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
       rec.onstop = () => {
@@ -225,11 +235,28 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
       return toast.error("Please pick an audio file");
     }
     if (file.size > MAX_UPLOAD_INPUT) return toast.error("File too large (max 50 MB)");
+
+    // Fast path: small + already a compressed format → skip the slow realtime re-encode
+    const isCompressed = /audio\/(webm|ogg|mp4|aac|mpeg)/i.test(file.type) || /\.(mp3|m4a|webm|ogg|opus|aac)$/i.test(file.name);
+    if (isCompressed && file.size <= FAST_PATH_BYTES) {
+      setBlob(file);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(file));
+      try {
+        const a = new Audio();
+        a.src = URL.createObjectURL(file);
+        await new Promise<void>((res) => { a.onloadedmetadata = () => res(); a.onerror = () => res(); });
+        setElapsed(Math.round(a.duration || 0));
+      } catch { /* ignore */ }
+      toast.success(`Ready ${fmtSize(file.size)} — uploading without re-encoding`);
+      return;
+    }
+
     setCompressing(true);
     try {
       const { blob: compressed, durationSec } = await compressAudio(file);
       if (compressed.size > MAX_BYTES) {
-        toast.error("Compressed file still too large (max 10 MB). Try a shorter clip.");
+        toast.error("Compressed file still too large (max 8 MB). Try a shorter clip.");
       } else {
         setBlob(compressed);
         setElapsed(durationSec);
@@ -399,28 +426,91 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
             {showAll ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {showAll && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
               {allLoading ? (
                 <p className="text-xs text-muted-foreground">Loading…</p>
               ) : !allSubs || allSubs.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No submissions yet.</p>
               ) : (
-                <ul className="space-y-2">
-                  {allSubs.map((s) => (
-                    <li key={s.id} className="flex flex-wrap items-center gap-3 rounded-md border bg-background p-3">
-                      <div className="w-full text-xs font-medium">{s.student_name}</div>
-                      <audio src={s.signed_url} controls className="h-9 max-w-full" />
-                      <div className="flex-1 text-xs text-muted-foreground">
-                        {fmtTime(s.duration_seconds)} · {fmtSize(s.file_size_bytes)} · {new Date(s.created_at).toLocaleString()}
-                      </div>
-                      {isAdmin && (
-                        <Button variant="ghost" size="sm" onClick={() => deleteSub(s, true)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3">
+                    <p className="mr-auto text-xs text-muted-foreground">
+                      {allSubs.filter((x) => !x.graded_at).length} ungraded · {allSubs.filter((x) => x.graded_at && !x.released_at).length} ready to release · {allSubs.filter((x) => x.released_at).length} released
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={grading || allSubs.every((x) => !!x.graded_at)}
+                      onClick={async () => {
+                        setGrading(true);
+                        try {
+                          const res = await gradeAllFn({ data: { postId } });
+                          toast.success(`AI graded ${res.graded} · ${res.failed} failed`);
+                          await loadAll();
+                        } catch (e) { toast.error(e instanceof Error ? e.message : "Grading failed"); }
+                        finally { setGrading(false); }
+                      }}
+                    >
+                      {grading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Grade all pending with AI
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={releasing || !allSubs.some((x) => x.graded_at && !x.released_at)}
+                      onClick={async () => {
+                        setReleasing(true);
+                        try {
+                          const res = await releaseFn({ data: { postId } });
+                          toast.success(`Released ${res.released} · ${res.emailsQueued} emails queued`);
+                          await loadAll();
+                        } catch (e) { toast.error(e instanceof Error ? e.message : "Release failed"); }
+                        finally { setReleasing(false); }
+                      }}
+                    >
+                      {releasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Release scores & email students
+                    </Button>
+                  </div>
+
+                  <ul className="space-y-2">
+                    {allSubs.map((s) => (
+                      <li key={s.id} className="space-y-2 rounded-md border bg-background p-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="text-xs font-medium">{s.student_name}</div>
+                          {s.released_at ? (
+                            <Badge variant="default" className="text-[10px]">Released</Badge>
+                          ) : s.graded_at ? (
+                            <Badge variant="secondary" className="text-[10px]">Graded — awaiting release</Badge>
+                          ) : s.grading_error ? (
+                            <Badge variant="destructive" className="text-[10px]">Grading error</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">Ungraded</Badge>
+                          )}
+                          <audio src={s.signed_url} controls className="h-9 max-w-full" />
+                          <div className="flex-1 text-xs text-muted-foreground">
+                            {fmtTime(s.duration_seconds)} · {fmtSize(s.file_size_bytes)} · {new Date(s.created_at).toLocaleString()}
+                          </div>
+                          {isAdmin && (
+                            <Button variant="ghost" size="sm" onClick={() => deleteSub(s, true)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {s.graded_at && (
+                          <div className="rounded bg-muted/40 p-2 text-xs">
+                            <div className="font-medium">
+                              Score: {s.total_score ?? 0}/30 — Clarity {s.clarity_score ?? 0}/10 · Accuracy {s.accuracy_score ?? 0}/10 · Completeness {s.completeness_score ?? 0}/10
+                            </div>
+                            {s.ai_feedback && <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{s.ai_feedback}</p>}
+                          </div>
+                        )}
+                        {s.grading_error && (
+                          <p className="text-xs text-destructive">{s.grading_error}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           )}
