@@ -64,9 +64,14 @@ function AuthLayout() {
 
   const Sidebar = () => (
     <div className="flex h-full flex-col">
-      <Link to="/dashboard" className="flex h-16 items-center gap-2 border-b px-6 font-serif text-lg font-semibold">
+      <a
+        href="/?stay=1"
+        onClick={() => setOpen(false)}
+        className="flex h-16 items-center gap-2 border-b px-6 font-serif text-lg font-semibold"
+        title="Browse the landing page (you'll stay signed in)"
+      >
         <GraduationCap className="h-6 w-6 text-primary" /> WeShare EduTech
-      </Link>
+      </a>
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map(({ to, label, icon: Icon }) => (
           <Link

@@ -47,9 +47,12 @@ function PublicationHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && session) {
-      navigate({ to: "/dashboard", replace: true });
-    }
+    if (authLoading || !session) return;
+    // Allow signed-in users to browse the landing page when they explicitly opt in
+    // (e.g. clicking the sidebar logo from the dashboard adds ?stay=1).
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    if (params?.get("stay") === "1") return;
+    navigate({ to: "/dashboard", replace: true });
   }, [authLoading, session, navigate]);
 
   useEffect(() => {
@@ -274,9 +277,15 @@ function ArticleCard({ item }: { item: FeedItem }) {
           </Link>
         )}
         {item.quiz_url && (
-          <a href={item.quiz_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+          <Link
+            to="/p/$slug"
+            params={{ slug: item.slug }}
+            hash="external-quiz"
+            className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
+            title="Submit your Learn-to-Teach voice note first to unlock the exam"
+          >
             <FileCheck className="h-3.5 w-3.5" /> Take Exam
-          </a>
+          </Link>
         )}
       </div>
     </article>
