@@ -154,46 +154,70 @@ export const listPostSubmissions = createServerFn({ method: "POST" })
 
 export const gradeAllPending = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ postId: z.string().uuid() }).parse(d))
+  .inputValidator((d) =>
+    z.object({
+      postId: z.string().uuid(),
+      limit: z.number().int().min(1).max(200).optional(),
+    }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const post = await assertCanModerate(context.userId, data.postId);
+    const perCall = data.limit ?? 80;
     const { data: subs } = await supabaseAdmin
       .from("voice_submissions")
       .select("id,storage_path,mime_type")
       .eq("post_id", data.postId)
+      .is("graded_at", null)
+      .order("created_at", { ascending: true })
+      .limit(perCall);
+
+    const { count: remainingBefore } = await supabaseAdmin
+      .from("voice_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("post_id", data.postId)
       .is("graded_at", null);
+
     let graded = 0, failed = 0;
-    for (const s of (subs ?? []) as any[]) {
-      try {
-        const { data: file, error: dlErr } = await supabaseAdmin.storage.from("submissions").download(s.storage_path);
-        if (dlErr || !file) throw new Error(dlErr?.message || "Download failed");
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        const result = await gradeOne({
-          audioBytes: bytes,
-          mime: s.mime_type || "audio/webm",
-          lessonTitle: (post as any).title || "",
-          lessonRubric: (post as any).learn_to_teach || "",
-        });
-        const total = result.clarity + result.accuracy + result.completeness;
-        await supabaseAdmin.from("voice_submissions").update({
-          transcript: result.transcript,
-          clarity_score: result.clarity,
-          accuracy_score: result.accuracy,
-          completeness_score: result.completeness,
-          total_score: total,
-          ai_feedback: result.feedback,
-          graded_at: new Date().toISOString(),
-          grading_error: "",
-        }).eq("id", s.id);
-        graded++;
-      } catch (e: any) {
-        failed++;
-        await supabaseAdmin.from("voice_submissions").update({
-          grading_error: String(e?.message ?? e).slice(0, 500),
-        }).eq("id", s.id);
+    const concurrency = 6;
+    const list = (subs ?? []) as any[];
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < list.length) {
+        const s = list[cursor++];
+        try {
+          const { data: file, error: dlErr } = await supabaseAdmin.storage.from("submissions").download(s.storage_path);
+          if (dlErr || !file) throw new Error(dlErr?.message || "Download failed");
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const result = await gradeOne({
+            audioBytes: bytes,
+            mime: s.mime_type || "audio/webm",
+            lessonTitle: (post as any).title || "",
+            lessonRubric: (post as any).learn_to_teach || "",
+          });
+          const total = result.clarity + result.accuracy + result.completeness;
+          await supabaseAdmin.from("voice_submissions").update({
+            transcript: result.transcript,
+            clarity_score: result.clarity,
+            accuracy_score: result.accuracy,
+            completeness_score: result.completeness,
+            total_score: total,
+            ai_feedback: result.feedback,
+            graded_at: new Date().toISOString(),
+            grading_error: "",
+          }).eq("id", s.id);
+          graded++;
+        } catch (e: any) {
+          failed++;
+          await supabaseAdmin.from("voice_submissions").update({
+            grading_error: String(e?.message ?? e).slice(0, 500),
+          }).eq("id", s.id);
+        }
       }
-    }
-    return { graded, failed, total: (subs ?? []).length };
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, list.length) }, () => worker()));
+
+    const remaining = Math.max(0, (remainingBefore ?? list.length) - graded - failed);
+    return { graded, failed, total: list.length, remaining };
   });
 
 export const overrideScore = createServerFn({ method: "POST" })

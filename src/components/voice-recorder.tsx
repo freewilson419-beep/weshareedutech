@@ -443,9 +443,18 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
                       disabled={grading || allSubs.every((x) => !!x.graded_at)}
                       onClick={async () => {
                         setGrading(true);
+                        let totalGraded = 0, totalFailed = 0;
                         try {
-                          const res = await gradeAllFn({ data: { postId } });
-                          toast.success(`AI graded ${res.graded} · ${res.failed} failed`);
+                          // Process in chunks so we can handle thousands of submissions
+                          // without hitting per-invocation server timeouts.
+                          for (let i = 0; i < 200; i++) {
+                            const res = await gradeAllFn({ data: { postId, limit: 80 } });
+                            totalGraded += res.graded;
+                            totalFailed += res.failed;
+                            if (res.remaining === 0 || (res.graded === 0 && res.failed === 0)) break;
+                            toast.message(`Graded ${totalGraded}, ${res.remaining} left…`);
+                          }
+                          toast.success(`AI graded ${totalGraded} · ${totalFailed} failed`);
                           await loadAll();
                         } catch (e) { toast.error(e instanceof Error ? e.message : "Grading failed"); }
                         finally { setGrading(false); }

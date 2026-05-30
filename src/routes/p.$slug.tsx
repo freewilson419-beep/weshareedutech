@@ -106,6 +106,7 @@ function ArticleView() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [hasSubmittedVoice, setHasSubmittedVoice] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -141,8 +142,12 @@ function ArticleView() {
       }
 
       if (user) {
-        const { data: bm } = await supabase.from("bookmarks").select("id").eq("post_id", p.id).eq("user_id", user.id).maybeSingle();
+        const [{ data: bm }, { data: vs }] = await Promise.all([
+          supabase.from("bookmarks").select("id").eq("post_id", p.id).eq("user_id", user.id).maybeSingle(),
+          supabase.from("voice_submissions").select("id").eq("post_id", p.id).eq("student_user_id", user.id).limit(1).maybeSingle(),
+        ]);
         setBookmarked(!!bm);
+        setHasSubmittedVoice(!!vs);
       }
       setLoading(false);
     })();
@@ -276,22 +281,43 @@ function ArticleView() {
         </div>
 
         {post.quiz_url && (
-          <div className="mt-12 rounded-lg border bg-card p-6 text-center">
+          <div id="external-quiz" className="mt-12 scroll-mt-20 rounded-lg border bg-card p-6 text-center">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">External quiz</p>
             <h3 className="mt-2 font-serif text-2xl">Test your understanding</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {user
-                ? "Make sure you've completed the Learn-to-Teach voice note above before you take the quiz."
-                : "Sign in first — quizzes are only available to members who've engaged with the lesson."}
-            </p>
-            {user ? (
-              <a href={post.quiz_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
-                <Button>Take the quiz <ExternalLink className="h-4 w-4" /></Button>
-              </a>
+            {!user ? (
+              <>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Sign in first — quizzes are only available to members who've engaged with the lesson.
+                </p>
+                <Link to="/login" className="mt-4 inline-flex">
+                  <Button variant="outline">Sign in to take the quiz</Button>
+                </Link>
+              </>
+            ) : hasSubmittedVoice ? (
+              <>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Nice work — your Learn-to-Teach voice note is in. You're cleared to take the exam.
+                </p>
+                <a href={post.quiz_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
+                  <Button>Take the quiz <ExternalLink className="h-4 w-4" /></Button>
+                </a>
+              </>
             ) : (
-              <Link to="/login" className="mt-4 inline-flex">
-                <Button variant="outline">Sign in to take the quiz</Button>
-              </Link>
+              <>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  The exam unlocks once you've submitted your Learn-to-Teach voice recording above. This isn't the site failing — it's how the lesson is designed.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    toast.info("Please record and submit your Learn-to-Teach voice note first.");
+                    document.getElementById("voice-submission")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  Go to Learn-to-Teach
+                </Button>
+              </>
             )}
           </div>
         )}
