@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, Clock, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings, Heart } from "lucide-react";
+import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, Clock, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings } from "lucide-react";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { MyGrades } from "@/components/my-grades";
 
@@ -55,7 +55,6 @@ function Dashboard() {
   const [stats, setStats] = useState({ published: 0, drafts: 0, views: 0, bookmarks: 0 });
   const [feed, setFeed] = useState<Feed[]>([]);
   const [trending, setTrending] = useState<Feed[]>([]);
-  const [forYou, setForYou] = useState<Feed[]>([]);
   const [mine, setMine] = useState<MyPost[]>([]);
   const [resume, setResume] = useState<Resume | null>(null);
   const [top, setTop] = useState<TopLesson | null>(null);
@@ -73,28 +72,29 @@ function Dashboard() {
       const [{ count: published }, { count: drafts }, { data: posts }, { count: bookmarks }, { data: profile }] = await Promise.all([
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_user_id", user.id).not("published_at", "is", null),
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_user_id", user.id).is("published_at", null),
-        supabase.from("posts").select("id,slug,title,published_at,updated_at").eq("author_user_id", user.id).order("updated_at", { ascending: false }).limit(5),
+        supabase.from("posts").select("id,slug,title,published_at,updated_at").eq("author_user_id", user.id).order("updated_at", { ascending: false }).limit(50),
         supabase.from("bookmarks").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("profiles").select("username,surname,title,interest_tags").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("username,surname,title").eq("user_id", user.id).maybeSingle(),
       ]);
 
       let views = 0;
       if (posts?.length) {
-        // total views + per-post counts to find top performer
-        const ids = posts.map((p) => p.id);
-        const { data: vRows } = await supabase.from("lesson_views").select("post_id").in("post_id", ids);
-        views = vRows?.length ?? 0;
-        const counts = new Map<string, number>();
-        (vRows ?? []).forEach((v) => counts.set(v.post_id, (counts.get(v.post_id) ?? 0) + 1));
-        let bestId = "", bestCount = 0;
-        counts.forEach((c, id) => { if (c > bestCount) { bestCount = c; bestId = id; } });
-        if (bestId) {
-          const best = posts.find((p) => p.id === bestId);
-          if (best) setTop({ slug: best.slug, title: best.title, views: bestCount });
-        }
+        // Per-post head counts so we're not capped by the 1000-row default
+        const perPost = await Promise.all(
+          posts.map(async (p) => {
+            const { count } = await supabase
+              .from("lesson_views")
+              .select("id", { count: "exact", head: true })
+              .eq("post_id", p.id);
+            return { post: p, count: count ?? 0 };
+          }),
+        );
+        views = perPost.reduce((sum, r) => sum + r.count, 0);
+        const best = perPost.reduce((a, b) => (b.count > a.count ? b : a), perPost[0]);
+        if (best && best.count > 0) setTop({ slug: best.post.slug, title: best.post.title, views: best.count });
       }
       setStats({ published: published ?? 0, drafts: drafts ?? 0, views, bookmarks: bookmarks ?? 0 });
-      setMine((posts ?? []) as MyPost[]);
+      setMine((posts ?? []).slice(0, 5) as MyPost[]);
       if (profile) setName(profile.username || profile.surname || "");
 
       // Continue reading — most recent unfinished
@@ -141,14 +141,20 @@ function Dashboard() {
 
       setFeed(await decorate(latest));
 
-      // Trending — last 7 days
+      // Trending — last 7 days (lift the 1k cap by paging through view rows)
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: recentViews } = await supabase
-        .from("lesson_views")
-        .select("post_id")
-        .gte("created_at", since);
       const tally = new Map<string, number>();
-      (recentViews ?? []).forEach((v) => tally.set(v.post_id, (tally.get(v.post_id) ?? 0) + 1));
+      const PAGE = 1000;
+      for (let from = 0; from < 50000; from += PAGE) {
+        const { data: rows, error } = await supabase
+          .from("lesson_views")
+          .select("post_id")
+          .gte("created_at", since)
+          .range(from, from + PAGE - 1);
+        if (error || !rows || rows.length === 0) break;
+        rows.forEach((v) => tally.set(v.post_id, (tally.get(v.post_id) ?? 0) + 1));
+        if (rows.length < PAGE) break;
+      }
       const topIds = Array.from(tally.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id]) => id);
       if (topIds.length) {
         const { data: tRows } = await supabase
@@ -157,27 +163,6 @@ function Dashboard() {
           .in("id", topIds)
           .not("published_at", "is", null);
         setTrending(await decorate(tRows));
-      }
-
-      // For You — overlap of interest tags + bookmarked tags
-      const { data: bms } = await supabase.from("bookmarks").select("post_id").eq("user_id", user.id).limit(50);
-      const bmIds = (bms ?? []).map((b) => b.post_id);
-      const { data: bmPosts } = bmIds.length
-        ? await supabase.from("posts").select("tags").in("id", bmIds)
-        : { data: [] as { tags: string[] }[] };
-      const tagSet = new Set<string>([...((profile as any)?.interest_tags ?? [])]);
-      (bmPosts ?? []).forEach((p) => (p.tags ?? []).forEach((t) => tagSet.add(t)));
-      const tagList = Array.from(tagSet).slice(0, 20);
-      if (tagList.length) {
-        const { data: fyRows } = await supabase
-          .from("posts")
-          .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
-          .not("published_at", "is", null)
-          .neq("author_user_id", user.id)
-          .overlaps("tags", tagList)
-          .order("published_at", { ascending: false })
-          .limit(4);
-        setForYou(await decorate(fyRows));
       }
     })();
   }, [user]);
@@ -286,18 +271,7 @@ function Dashboard() {
         </section>
       )}
 
-      {/* For you */}
-      {forYou.length > 0 && (
-        <section className="space-y-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-rose-500"><Heart className="mr-1 inline h-3 w-3" /> Picked for you</p>
-            <h2 className="font-serif text-2xl md:text-3xl">Based on your interests</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {forYou.map((item) => <FeedCard key={item.id} item={item} />)}
-          </div>
-        </section>
-      )}
+      {/* For-you removed by request */}
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Community feed */}
