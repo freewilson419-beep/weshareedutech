@@ -75,12 +75,42 @@ export type Database = {
           },
         ]
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_user_id: string
           body: string
           created_at: string
           id: string
+          parent_id: string | null
           post_id: string
         }
         Insert: {
@@ -88,6 +118,7 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          parent_id?: string | null
           post_id: string
         }
         Update: {
@@ -95,9 +126,17 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          parent_id?: string | null
           post_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
@@ -367,6 +406,7 @@ export type Database = {
           cta_url: string
           id: string
           image_url: string | null
+          target_user_ids: string[]
           title: string
         }
         Insert: {
@@ -377,6 +417,7 @@ export type Database = {
           cta_url?: string
           id?: string
           image_url?: string | null
+          target_user_ids?: string[]
           title: string
         }
         Update: {
@@ -387,6 +428,7 @@ export type Database = {
           cta_url?: string
           id?: string
           image_url?: string | null
+          target_user_ids?: string[]
           title?: string
         }
         Relationships: []
@@ -398,6 +440,7 @@ export type Database = {
           conclusion_slide: string
           cover_image_url: string
           created_at: string
+          download_url: string
           excerpt: string
           goal: string
           id: string
@@ -405,15 +448,18 @@ export type Database = {
           is_anonymous: boolean
           is_unlisted: boolean
           learn_to_teach: string
+          like_count: number
           published_at: string | null
           quiz_url: string
           read_time_minutes: number
           reflection: string
+          reflection_form_url: string
           section_media: Json
           slug: string
           tags: string[]
           title: string
           updated_at: string
+          view_count: number
         }
         Insert: {
           author_user_id: string
@@ -421,6 +467,7 @@ export type Database = {
           conclusion_slide?: string
           cover_image_url?: string
           created_at?: string
+          download_url?: string
           excerpt?: string
           goal?: string
           id?: string
@@ -428,15 +475,18 @@ export type Database = {
           is_anonymous?: boolean
           is_unlisted?: boolean
           learn_to_teach?: string
+          like_count?: number
           published_at?: string | null
           quiz_url?: string
           read_time_minutes?: number
           reflection?: string
+          reflection_form_url?: string
           section_media?: Json
           slug: string
           tags?: string[]
           title: string
           updated_at?: string
+          view_count?: number
         }
         Update: {
           author_user_id?: string
@@ -444,6 +494,7 @@ export type Database = {
           conclusion_slide?: string
           cover_image_url?: string
           created_at?: string
+          download_url?: string
           excerpt?: string
           goal?: string
           id?: string
@@ -451,15 +502,18 @@ export type Database = {
           is_anonymous?: boolean
           is_unlisted?: boolean
           learn_to_teach?: string
+          like_count?: number
           published_at?: string | null
           quiz_url?: string
           read_time_minutes?: number
           reflection?: string
+          reflection_form_url?: string
           section_media?: Json
           slug?: string
           tags?: string[]
           title?: string
           updated_at?: string
+          view_count?: number
         }
         Relationships: []
       }
