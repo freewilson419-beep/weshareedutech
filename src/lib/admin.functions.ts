@@ -202,6 +202,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       imageUrl: z.string().url().max(1000).optional().or(z.literal("")),
       ctaLabel: z.string().min(1).max(40).optional(),
       ctaUrl: z.string().min(1).max(500).optional(),
+      targetUserIds: z.array(z.string().uuid()).max(10000).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -209,19 +210,22 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
     const ctaLabel = (data.ctaLabel || "Open").trim();
     const ctaUrl = (data.ctaUrl || "/dashboard").trim();
     const imageUrl = data.imageUrl?.trim() || null;
+    const targets = data.targetUserIds && data.targetUserIds.length > 0 ? data.targetUserIds : null;
+
     const { data: ann, error: aErr } = await supabaseAdmin
       .from("platform_announcements")
       .insert({
         title: data.title, content: data.body, author_user_id: context.userId,
         image_url: imageUrl, cta_label: ctaLabel, cta_url: ctaUrl,
+        target_user_ids: targets ?? [],
       })
       .select("id")
       .single();
     if (aErr) throw new Error(aErr.message);
 
-    const { data: users } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id,email,title,surname,othernames");
+    let usersQuery = supabaseAdmin.from("profiles").select("user_id,email,title,surname,othernames");
+    if (targets) usersQuery = usersQuery.in("user_id", targets);
+    const { data: users } = await usersQuery;
 
     const notifRows = (users ?? []).map((u: any) => ({
       user_id: u.user_id,
