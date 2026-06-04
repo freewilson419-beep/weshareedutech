@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Clock, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Lightbulb, GraduationCap, FileCheck } from "lucide-react";
+import { ArrowRight, Bookmark, Eye, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Lightbulb, GraduationCap, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeedItem {
@@ -22,6 +22,8 @@ interface FeedItem {
   is_anonymous: boolean;
   learn_to_teach: string | null;
   quiz_url: string | null;
+  view_count?: number;
+  like_count?: number;
   author?: { username: string; title: string; surname: string };
 }
 
@@ -59,7 +61,7 @@ function PublicationHome() {
     (async () => {
       const { data: posts } = await supabase
         .from("posts")
-        .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous,learn_to_teach,quiz_url")
+        .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous,learn_to_teach,quiz_url,view_count,like_count")
         .not("published_at", "is", null)
         .eq("is_unlisted", false)
         .order("published_at", { ascending: false })
@@ -70,18 +72,7 @@ function PublicationHome() {
         return;
       }
 
-      const ids = posts.map((p) => p.id);
-      const { data: claps } = await supabase
-        .from("claps")
-        .select("post_id")
-        .in("post_id", ids);
-
-      const counts = new Map<string, number>();
-      (claps ?? []).forEach((c: { post_id: string }) => {
-        counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1);
-      });
-
-      const ordered = [...posts].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0));
+      const ordered = [...posts].sort((a, b) => ((b as any).like_count ?? 0) - ((a as any).like_count ?? 0));
 
       const authorIds = Array.from(new Set(ordered.map((post) => post.author_user_id)));
       const { data: profiles } = await supabase
@@ -294,17 +285,20 @@ function ArticleCard({ item }: { item: FeedItem }) {
 
 function Meta({ item, className }: { item: FeedItem; className?: string }) {
   const author = item.author;
+  // Username-only (no titles)
   const name = item.is_anonymous
     ? "Anonymous"
-    : author ? `${author.title ? author.title + " " : ""}${author.username || author.surname || "Anonymous"}` : "Anonymous";
+    : author ? (author.username || author.surname || "Anonymous") : "Anonymous";
 
   return (
     <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground ${className ?? ""}`}>
       <span className="font-medium text-foreground">{name}</span>
       <span>·</span>
-      <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {item.read_time_minutes}m</span>
+      <span>{new Date(item.published_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
       <span>·</span>
-      <span>{new Date(item.published_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+      <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {(item.view_count ?? 0).toLocaleString()}</span>
+      <span>·</span>
+      <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {(item.like_count ?? 0).toLocaleString()}</span>
     </div>
   );
 }

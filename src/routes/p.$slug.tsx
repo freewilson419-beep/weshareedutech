@@ -5,11 +5,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, Clock, ArrowLeft, ExternalLink, Bookmark, Send, Heart } from "lucide-react";
+import { GraduationCap, ArrowLeft, ExternalLink, Bookmark, Send, Heart, Eye, MessageCircle, Download, ClipboardList, Shield, Reply } from "lucide-react";
 import { toast } from "sonner";
 import { MediaRender, type MediaItem } from "@/components/media-manager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { authorName, initialsFor } from "@/lib/author-display";
+import { initialsFor } from "@/lib/author-display";
 import { ReportLessonButton } from "@/components/report-lesson-button";
 import { SiteFooter } from "@/components/site-footer";
 import { VoiceRecorder } from "@/components/voice-recorder";
@@ -30,13 +30,26 @@ interface Post {
   reflection: string;
   learn_to_teach: string;
   quiz_url: string;
+  download_url?: string;
+  reflection_form_url?: string;
+  view_count?: number;
+  like_count?: number;
   author_user_id: string;
   is_anonymous?: boolean;
   section_media?: Record<string, MediaItem[]>;
 }
 
 interface Author { user_id: string; username: string; title: string; surname: string; affiliation: string; department: string; avatar_url: string }
-interface Comment { id: string; body: string; created_at: string; author_user_id: string; author?: Author }
+interface Comment {
+  id: string;
+  body: string;
+  created_at: string;
+  author_user_id: string;
+  parent_id?: string | null;
+  author?: Author;
+  likes: number;
+  liked: boolean;
+}
 
 export const Route = createFileRoute("/p/$slug")({
   loader: async ({ params }) => {
@@ -94,6 +107,15 @@ export const Route = createFileRoute("/p/$slug")({
   component: ArticleView,
 });
 
+const COMMENT_LIMIT = 1000;
+
+// Username-only (no "Dr." / "Prof." titles per platform rule)
+function displayName(a: { username?: string | null; surname?: string | null } | null | undefined, isAnon?: boolean): string {
+  if (isAnon) return "Anonymous contributor";
+  if (!a) return "Anonymous";
+  return a.username || a.surname || "Anonymous";
+}
+
 function ArticleView() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
@@ -102,9 +124,13 @@ function ArticleView() {
   const [loading, setLoading] = useState(true);
   const [likes, setLikes] = useState(0);
   const [liked, setLiked] = useState(false);
+  const [views, setViews] = useState(0);
   const [bookmarked, setBookmarked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState("");
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [hasSubmittedVoice, setHasSubmittedVoice] = useState(false);
 
@@ -115,36 +141,55 @@ function ArticleView() {
         setLoading(false);
         return;
       }
-      setPost(p as unknown as Post);
+      const post = p as unknown as Post;
+      setPost(post);
+      setLikes(post.like_count ?? 0);
+      setViews((post.view_count ?? 0) + 1); // optimistic: include this view
 
-      // record view (await so the request actually fires)
+      // record view (fires trigger that bumps view_count)
       await supabase.from("lesson_views").insert({
-        post_id: p.id,
+        post_id: post.id,
         viewer_user_id: user?.id ?? null,
         referrer: typeof document !== "undefined" ? document.referrer : "",
       });
 
       const [{ data: a }, { data: clapRows }, { data: cmts }] = await Promise.all([
-        supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").eq("user_id", p.author_user_id).maybeSingle(),
-        supabase.from("claps").select("count,user_id").eq("post_id", p.id),
-        supabase.from("comments").select("id,body,created_at,author_user_id").eq("post_id", p.id).order("created_at", { ascending: true }),
+        supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").eq("user_id", post.author_user_id).maybeSingle(),
+        supabase.from("claps").select("user_id").eq("post_id", post.id),
+        supabase.from("comments").select("id,body,created_at,author_user_id,parent_id").eq("post_id", post.id).order("created_at", { ascending: true }),
       ]);
       setAuthor(a as Author | null);
-      // One like per user: count distinct rows
-      setLikes((clapRows ?? []).length);
       if (user) setLiked(!!(clapRows ?? []).find((r) => r.user_id === user.id));
 
       if (cmts?.length) {
         const ids = Array.from(new Set(cmts.map((c) => c.author_user_id)));
-        const { data: cprof } = await supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").in("user_id", ids);
+        const cmtIds = cmts.map((c) => c.id);
+        const [{ data: cprof }, { data: roles }, { data: cl }] = await Promise.all([
+          supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").in("user_id", ids),
+          supabase.from("user_roles").select("user_id").eq("role", "admin").in("user_id", ids),
+          supabase.from("comment_likes").select("comment_id,user_id").in("comment_id", cmtIds),
+        ]);
         const byId = new Map(cprof?.map((x) => [x.user_id, x]) ?? []);
-        setComments(cmts.map((c) => ({ ...c, author: byId.get(c.author_user_id) as Author })));
+        setAdminIds(new Set((roles ?? []).map((r: any) => r.user_id)));
+        const likeBy = new Map<string, { count: number; mine: boolean }>();
+        (cl ?? []).forEach((l: any) => {
+          const cur = likeBy.get(l.comment_id) ?? { count: 0, mine: false };
+          cur.count++;
+          if (user && l.user_id === user.id) cur.mine = true;
+          likeBy.set(l.comment_id, cur);
+        });
+        setComments(cmts.map((c) => ({
+          ...c,
+          author: byId.get(c.author_user_id) as Author,
+          likes: likeBy.get(c.id)?.count ?? 0,
+          liked: likeBy.get(c.id)?.mine ?? false,
+        })));
       }
 
       if (user) {
         const [{ data: bm }, { data: vs }] = await Promise.all([
-          supabase.from("bookmarks").select("id").eq("post_id", p.id).eq("user_id", user.id).maybeSingle(),
-          supabase.from("voice_submissions").select("id").eq("post_id", p.id).eq("student_user_id", user.id).limit(1).maybeSingle(),
+          supabase.from("bookmarks").select("id").eq("post_id", post.id).eq("user_id", user.id).maybeSingle(),
+          supabase.from("voice_submissions").select("id").eq("post_id", post.id).eq("student_user_id", user.id).limit(1).maybeSingle(),
         ]);
         setBookmarked(!!bm);
         setHasSubmittedVoice(!!vs);
@@ -187,7 +232,7 @@ function ArticleView() {
   }
 
   const isAnon = !!post.is_anonymous;
-  const aName = authorName(author, isAnon);
+  const aName = displayName(author, isAnon);
 
   const toggleLike = async () => {
     if (!user) return toast.error("Sign in to like");
@@ -216,23 +261,45 @@ function ArticleView() {
     }
   };
 
-  const postComment = async () => {
+  const submitComment = async (body: string, parentId: string | null) => {
     if (!user) return toast.error("Sign in to comment");
-    if (!newComment.trim()) return;
+    const t = body.trim();
+    if (!t) return;
+    if (t.length > COMMENT_LIMIT) return toast.error(`Max ${COMMENT_LIMIT} characters`);
     setPosting(true);
     const { data, error } = await supabase
       .from("comments")
-      .insert({ post_id: post.id, author_user_id: user.id, body: newComment.trim() })
-      .select("id,body,created_at,author_user_id")
+      .insert({ post_id: post.id, author_user_id: user.id, body: t, parent_id: parentId })
+      .select("id,body,created_at,author_user_id,parent_id")
       .single();
     if (error) toast.error(error.message);
     else if (data) {
-      const { data: prof } = await supabase.from("profiles").select("user_id,username,title,surname,affiliation,department").eq("user_id", user.id).maybeSingle();
-      setComments((cs) => [...cs, { ...data, author: prof as Author }]);
-      setNewComment("");
+      const { data: prof } = await supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").eq("user_id", user.id).maybeSingle();
+      setComments((cs) => [...cs, { ...(data as any), author: prof as Author, likes: 0, liked: false }]);
+      // check if current user is admin (one-time include)
+      const { data: r } = await supabase.from("user_roles").select("user_id").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      if (r) setAdminIds((s) => new Set([...s, user.id]));
     }
     setPosting(false);
   };
+
+  const toggleCommentLike = async (c: Comment) => {
+    if (!user) return toast.error("Sign in to like");
+    setComments((cs) => cs.map((x) => x.id === c.id ? { ...x, liked: !c.liked, likes: c.likes + (c.liked ? -1 : 1) } : x));
+    if (c.liked) {
+      await supabase.from("comment_likes").delete().eq("comment_id", c.id).eq("user_id", user.id);
+    } else {
+      await supabase.from("comment_likes").insert({ comment_id: c.id, user_id: user.id });
+    }
+  };
+
+  const topComments = comments.filter((c) => !c.parent_id);
+  const repliesByParent = new Map<string, Comment[]>();
+  comments.filter((c) => c.parent_id).forEach((c) => {
+    const arr = repliesByParent.get(c.parent_id!) ?? [];
+    arr.push(c);
+    repliesByParent.set(c.parent_id!, arr);
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,9 +327,12 @@ function ArticleView() {
             <span className="font-medium text-foreground">{aName}</span>
             {!isAnon && author?.affiliation && <span>· {author.affiliation}</span>}
             <span>·</span>
-            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {post.read_time_minutes} min read</span>
-            <span>·</span>
-            <span>{new Date(post.published_at).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</span>
+            <span>Posted {new Date(post.published_at).toLocaleString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {views.toLocaleString()} views</span>
+            <span className="inline-flex items-center gap-1"><Heart className={`h-3.5 w-3.5 ${liked ? "fill-current text-primary" : ""}`} /> {likes.toLocaleString()} likes</span>
+            <a href="#comments" className="inline-flex items-center gap-1 hover:text-primary"><MessageCircle className="h-3.5 w-3.5" /> {comments.length} comments</a>
           </div>
         </div>
 
@@ -270,12 +340,29 @@ function ArticleView() {
           <img src={post.cover_image_url} alt="" className="mt-8 aspect-[16/9] w-full rounded-md object-cover sm:mt-10" />
         )}
 
+        {post.download_url && (
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 rounded-lg border bg-primary/5 p-4">
+            <p className="text-sm text-muted-foreground">Want a copy to study offline?</p>
+            <a href={post.download_url} target="_blank" rel="noreferrer">
+              <Button><Download className="h-4 w-4" /> Download Learning Material</Button>
+            </a>
+          </div>
+        )}
+
         <div className="prose-article mt-12 space-y-12 text-[1.075rem] leading-relaxed">
           <Section label="Goal" body={post.goal} />
           <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
-          <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection} />
+          <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection}>
+            {post.reflection_form_url && (
+              <div className="mt-4">
+                <a href={post.reflection_form_url} target="_blank" rel="noreferrer">
+                  <Button variant="outline"><ClipboardList className="h-4 w-4" /> Open reflection form <ExternalLink className="h-3.5 w-3.5" /></Button>
+                </a>
+              </div>
+            )}
+          </Section>
           <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
           <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} /></div>
         </div>
@@ -305,7 +392,7 @@ function ArticleView() {
             ) : (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  The exam unlocks once you've submitted your Learn-to-Teach voice recording above. This isn't the site failing — it's how the lesson is designed.
+                  The exam unlocks once you've submitted your Learn-to-Teach voice recording above.
                 </p>
                 <Button
                   variant="outline"
@@ -338,8 +425,21 @@ function ArticleView() {
           <h3 className="font-serif text-2xl">Discussion ({comments.length})</h3>
           {user ? (
             <div className="mt-4 space-y-2">
-              <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Share your thoughts…" rows={3} />
-              <Button onClick={postComment} disabled={posting || !newComment.trim()}><Send className="h-4 w-4" /> Post</Button>
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value.slice(0, COMMENT_LIMIT))}
+                placeholder="Share your thoughts…"
+                rows={3}
+                maxLength={COMMENT_LIMIT}
+              />
+              <div className="flex items-center justify-between">
+                <span className={`text-xs ${newComment.length >= COMMENT_LIMIT - 50 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {newComment.length}/{COMMENT_LIMIT}
+                </span>
+                <Button onClick={async () => { await submitComment(newComment, null); setNewComment(""); }} disabled={posting || !newComment.trim()}>
+                  <Send className="h-4 w-4" /> Post
+                </Button>
+              </div>
             </div>
           ) : (
             <p className="mt-4 rounded-md border bg-muted/40 p-4 text-sm text-muted-foreground">
@@ -347,24 +447,50 @@ function ArticleView() {
             </p>
           )}
           <ul className="mt-8 space-y-6">
-            {comments.map((c) => {
-              const cn = authorName(c.author, false);
-              return (
-                <li key={c.id} className="border-b pb-6">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={c.author?.avatar_url || undefined} alt={cn} />
-                      <AvatarFallback className="bg-primary/10 text-xs text-primary">{initialsFor(cn)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{cn}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+            {topComments.map((c) => (
+              <li key={c.id} className="border-b pb-6">
+                <CommentItem
+                  c={c}
+                  isAdmin={adminIds.has(c.author_user_id)}
+                  onLike={() => toggleCommentLike(c)}
+                  canReply={!!user}
+                  onReply={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyBody(""); }}
+                />
+                {/* Replies */}
+                <ul className="mt-4 ml-8 space-y-4 border-l pl-4">
+                  {(repliesByParent.get(c.id) ?? []).map((r) => (
+                    <li key={r.id}>
+                      <CommentItem
+                        c={r}
+                        isAdmin={adminIds.has(r.author_user_id)}
+                        onLike={() => toggleCommentLike(r)}
+                        canReply={false}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {replyTo === c.id && user && (
+                  <div className="mt-3 ml-8 space-y-2 border-l pl-4">
+                    <Textarea
+                      value={replyBody}
+                      onChange={(e) => setReplyBody(e.target.value.slice(0, COMMENT_LIMIT))}
+                      placeholder={`Reply to ${displayName(c.author, false)}…`}
+                      rows={2}
+                      maxLength={COMMENT_LIMIT}
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{replyBody.length}/{COMMENT_LIMIT}</span>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setReplyTo(null)}>Cancel</Button>
+                        <Button size="sm" disabled={posting || !replyBody.trim()} onClick={async () => { await submitComment(replyBody, c.id); setReplyBody(""); setReplyTo(null); }}>
+                          <Send className="h-3.5 w-3.5" /> Reply
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
-                </li>
-              );
-            })}
+                )}
+              </li>
+            ))}
           </ul>
         </section>
       </article>
@@ -373,15 +499,58 @@ function ArticleView() {
   );
 }
 
-function Section({ id, label, body, media }: { id?: string; label: string; body: string; media?: MediaItem[] }) {
+function CommentItem({
+  c, isAdmin, onLike, canReply, onReply,
+}: {
+  c: Comment;
+  isAdmin: boolean;
+  onLike: () => void;
+  canReply: boolean;
+  onReply?: () => void;
+}) {
+  const name = displayName(c.author, false);
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={c.author?.avatar_url || undefined} alt={name} />
+          <AvatarFallback className="bg-primary/10 text-xs text-primary">{initialsFor(name)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          {isAdmin && (
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-primary inline-flex items-center gap-1">
+              <Shield className="h-3 w-3" /> Admin
+            </p>
+          )}
+          <p className="text-sm font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+        </div>
+      </div>
+      <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
+      <div className="mt-2 flex items-center gap-3 text-xs">
+        <button onClick={onLike} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? "text-primary" : "text-muted-foreground"}`}>
+          <Heart className={`h-3.5 w-3.5 ${c.liked ? "fill-current" : ""}`} /> {c.likes > 0 ? c.likes : "Like"}
+        </button>
+        {canReply && onReply && (
+          <button onClick={onReply} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+            <Reply className="h-3.5 w-3.5" /> Reply
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Section({ id, label, body, media, children }: { id?: string; label: string; body: string; media?: MediaItem[]; children?: React.ReactNode }) {
   const hasBody = !!body?.trim();
   const hasMedia = !!media?.length;
-  if (!hasBody && !hasMedia) return null;
+  if (!hasBody && !hasMedia && !children) return null;
   return (
     <section id={id} className={id ? "scroll-mt-20" : undefined}>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
       {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
       {hasMedia && <MediaRender items={media!} />}
+      {children}
     </section>
   );
 }

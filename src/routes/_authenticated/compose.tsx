@@ -41,6 +41,7 @@ function Compose() {
     title: "", excerpt: "", cover_image_url: "", tags: "",
     goal: "", intro_slide: "", body_slide: "", conclusion_slide: "",
     reflection: "", learn_to_teach: "", quiz_url: "",
+    download_url: "", reflection_form_url: "",
   });
   const [showPublishAgreement, setShowPublishAgreement] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -65,6 +66,8 @@ function Compose() {
             goal: data.goal, intro_slide: data.intro_slide, body_slide: data.body_slide,
             conclusion_slide: data.conclusion_slide, reflection: data.reflection,
             learn_to_teach: data.learn_to_teach, quiz_url: data.quiz_url,
+            download_url: (data as any).download_url ?? "",
+            reflection_form_url: (data as any).reflection_form_url ?? "",
           });
           setIsAnonymous(!!data.is_anonymous);
           setIsUnlisted(!!data.is_unlisted);
@@ -113,6 +116,8 @@ function Compose() {
       goal: form.goal, intro_slide: form.intro_slide, body_slide: form.body_slide,
       conclusion_slide: form.conclusion_slide, reflection: form.reflection,
       learn_to_teach: form.learn_to_teach, quiz_url: form.quiz_url.trim(),
+      download_url: form.download_url.trim(),
+      reflection_form_url: form.reflection_form_url.trim(),
       read_time_minutes: read,
       section_media: media,
       is_anonymous: isAnonymous,
@@ -219,6 +224,16 @@ function Compose() {
           <Input value={form.quiz_url} onChange={u("quiz_url")} placeholder="https://forms.gle/…" />
         </Field>
         <p className="text-xs text-muted-foreground">Optional. Readers will see a "Take the quiz" button that opens this link.</p>
+
+        <Field label="Reflection form URL (optional Google Form for reflections)">
+          <Input value={form.reflection_form_url} onChange={u("reflection_form_url")} placeholder="https://forms.gle/…" />
+        </Field>
+        <p className="text-xs text-muted-foreground">Appears as a "Open reflection form" button under the Reflection section.</p>
+
+        <Field label="Download learning material URL (PDF or page link)">
+          <Input value={form.download_url} onChange={u("download_url")} placeholder="https://… (PDF or download page)" />
+        </Field>
+        <p className="text-xs text-muted-foreground">If set, readers will see a "Download Learning Material" button on the lesson.</p>
       </CardContent></Card>
 
       <Card><CardContent className="p-6">

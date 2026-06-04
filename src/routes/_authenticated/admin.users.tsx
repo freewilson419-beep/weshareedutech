@@ -8,10 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock } from "lucide-react";
-import { adminListUsers, adminSetUserRole, adminDeleteUser } from "@/lib/admin.functions";
+import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock, Megaphone, Send } from "lucide-react";
+import { adminListUsers, adminSetUserRole, adminDeleteUser, adminBroadcastAnnouncement } from "@/lib/admin.functions";
 import { adminResetUsernameEdit, adminSetUsername } from "@/lib/account.functions";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { formatDistanceToNow } from "date-fns";
@@ -29,11 +30,16 @@ function AdminUsers() {
   const del = useServerFn(adminDeleteUser);
   const resetEditFn = useServerFn(adminResetUsernameEdit);
   const setUsernameFn = useServerFn(adminSetUsername);
+  const broadcast = useServerFn(adminBroadcastAnnouncement);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<{ userId: string; name: string; current: string } | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [savingUname, setSavingUname] = useState(false);
+  const [announceTarget, setAnnounceTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [aTitle, setATitle] = useState("");
+  const [aBody, setABody] = useState("");
+  const [aSending, setASending] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
 
@@ -133,6 +139,9 @@ function AdminUsers() {
                 <Button variant="ghost" size="icon" title="Edit username" onClick={() => { setEditing({ userId: u.user_id, name, current: u.username || "" }); setNewUsername(u.username || ""); }}>
                   <AtSign className="h-4 w-4" />
                 </Button>
+                <Button variant="ghost" size="icon" title="Send announcement to this user" onClick={() => { setAnnounceTarget({ userId: u.user_id, name }); setATitle(""); setABody(""); }}>
+                  <Megaphone className="h-4 w-4" />
+                </Button>
                 {(u.username_edits_used ?? 0) >= 1 && (
                   <Button variant="ghost" size="icon" title="Allow user to change their username again" onClick={() => onResetEdit(u.user_id, name)}>
                     <Unlock className="h-4 w-4" />
@@ -186,6 +195,38 @@ function AdminUsers() {
             <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
             <Button onClick={onSaveUsername} disabled={savingUname}>
               {savingUname ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!announceTarget} onOpenChange={(v) => { if (!v) setAnnounceTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send announcement to {announceTarget?.name}</DialogTitle>
+            <DialogDescription>
+              Sends an in-app notification and a branded email — only to this user.
+            </DialogDescription>
+          </DialogHeader>
+          <Input value={aTitle} onChange={(e) => setATitle(e.target.value)} placeholder="Title…" maxLength={200} />
+          <Textarea value={aBody} onChange={(e) => setABody(e.target.value)} placeholder="Message…" rows={5} maxLength={4000} />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAnnounceTarget(null)}>Cancel</Button>
+            <Button
+              disabled={aSending || !aTitle.trim() || !aBody.trim()}
+              onClick={async () => {
+                if (!announceTarget) return;
+                setASending(true);
+                try {
+                  const r = await broadcast({ data: { title: aTitle, body: aBody, targetUserIds: [announceTarget.userId] } });
+                  toast.success(`Sent · ${r.emailsQueued} email queued`);
+                  setAnnounceTarget(null);
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Failed");
+                } finally { setASending(false); }
+              }}
+            >
+              {aSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send
             </Button>
           </DialogFooter>
         </DialogContent>
