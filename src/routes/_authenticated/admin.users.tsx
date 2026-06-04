@@ -8,10 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock } from "lucide-react";
-import { adminListUsers, adminSetUserRole, adminDeleteUser } from "@/lib/admin.functions";
+import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock, Megaphone, Send } from "lucide-react";
+import { adminListUsers, adminSetUserRole, adminDeleteUser, adminBroadcastAnnouncement } from "@/lib/admin.functions";
 import { adminResetUsernameEdit, adminSetUsername } from "@/lib/account.functions";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { formatDistanceToNow } from "date-fns";
@@ -29,11 +30,16 @@ function AdminUsers() {
   const del = useServerFn(adminDeleteUser);
   const resetEditFn = useServerFn(adminResetUsernameEdit);
   const setUsernameFn = useServerFn(adminSetUsername);
+  const broadcast = useServerFn(adminBroadcastAnnouncement);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<{ userId: string; name: string; current: string } | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [savingUname, setSavingUname] = useState(false);
+  const [announceTarget, setAnnounceTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [aTitle, setATitle] = useState("");
+  const [aBody, setABody] = useState("");
+  const [aSending, setASending] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
 
