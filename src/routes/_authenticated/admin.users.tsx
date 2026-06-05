@@ -235,6 +235,52 @@ function AdminUsers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!details} onOpenChange={(v) => { if (!v) setDetails(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User details</DialogTitle>
+            <DialogDescription>Full contact and profile information.</DialogDescription>
+          </DialogHeader>
+          {details && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={details.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary">{initialsFor(authorName(details, false))}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{[details.title, details.surname, details.othernames].filter(Boolean).join(" ").trim() || "—"}</p>
+                  <p className="text-xs text-muted-foreground">@{details.username || "—"} · <span className="capitalize">{details.role}</span></p>
+                </div>
+              </div>
+              <div className="space-y-2 rounded-md border p-3">
+                <Row icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={details.email || "—"} />
+                <Row icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={details.phone_number || "—"} />
+                <Row icon={<MessageCircle className="h-3.5 w-3.5" />} label="WhatsApp" value={details.whatsapp_number || "—"} />
+                <Row icon={<AtSign className="h-3.5 w-3.5" />} label="Username" value={details.username || "—"} />
+                <Row label="Department" value={details.department || "—"} />
+                <Row label="Affiliation" value={details.affiliation || "—"} />
+                <Row label="Joined" value={new Date(details.created_at).toLocaleString()} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDetails(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Row({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 inline-flex w-24 shrink-0 items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground">
+        {icon}{label}
+      </span>
+      <span className="flex-1 break-words text-sm">{value}</span>
     </div>
   );
 }
