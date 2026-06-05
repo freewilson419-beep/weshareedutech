@@ -6,7 +6,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings } from "lucide-react";
+import {
+  PenLine,
+  Eye,
+  BookmarkIcon,
+  FileText,
+  Sparkles,
+  Flame,
+  ArrowRight,
+  BookOpen,
+  TrendingUp,
+  History,
+  Trophy,
+  Settings,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { MyGrades } from "@/components/my-grades";
@@ -70,13 +83,27 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ count: published }, { count: drafts }, { data: posts }, { count: bookmarks }, { data: profile }] = await Promise.all([
-        supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_user_id", user.id).not("published_at", "is", null),
-        supabase.from("posts").select("id", { count: "exact", head: true }).eq("author_user_id", user.id).is("published_at", null),
-        supabase.from("posts").select("id,slug,title,published_at,updated_at").eq("author_user_id", user.id).order("updated_at", { ascending: false }).limit(50),
-        supabase.from("bookmarks").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("profiles").select("username,surname,title").eq("user_id", user.id).maybeSingle(),
-      ]);
+      const [{ count: published }, { count: drafts }, { data: posts }, { count: bookmarks }, { data: profile }] =
+        await Promise.all([
+          supabase
+            .from("posts")
+            .select("id", { count: "exact", head: true })
+            .eq("author_user_id", user.id)
+            .not("published_at", "is", null),
+          supabase
+            .from("posts")
+            .select("id", { count: "exact", head: true })
+            .eq("author_user_id", user.id)
+            .is("published_at", null),
+          supabase
+            .from("posts")
+            .select("id,slug,title,published_at,updated_at")
+            .eq("author_user_id", user.id)
+            .order("updated_at", { ascending: false })
+            .limit(50),
+          supabase.from("bookmarks").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+          supabase.from("profiles").select("username,surname,title").eq("user_id", user.id).maybeSingle(),
+        ]);
 
       let views = 0;
       if (posts?.length) {
@@ -112,7 +139,8 @@ function Dashboard() {
           .select("slug,title,cover_image_url")
           .eq("id", rp[0].post_id)
           .maybeSingle();
-        if (rPost) setResume({ slug: rPost.slug, title: rPost.title, cover: rPost.cover_image_url, pct: rp[0].progress_pct });
+        if (rPost)
+          setResume({ slug: rPost.slug, title: rPost.title, cover: rPost.cover_image_url, pct: rp[0].progress_pct });
       }
 
       // Community feed (latest)
@@ -135,7 +163,7 @@ function Dashboard() {
           return {
             ...p,
             author_label: authorName(a as any, p.is_anonymous),
-            author_avatar: !p.is_anonymous ? (a as any)?.avatar_url ?? "" : "",
+            author_avatar: !p.is_anonymous ? ((a as any)?.avatar_url ?? "") : "",
           };
         });
       };
@@ -156,11 +184,16 @@ function Dashboard() {
         rows.forEach((v) => tally.set(v.post_id, (tally.get(v.post_id) ?? 0) + 1));
         if (rows.length < PAGE) break;
       }
-      const topIds = Array.from(tally.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id]) => id);
+      const topIds = Array.from(tally.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([id]) => id);
       if (topIds.length) {
         const { data: tRows } = await supabase
           .from("posts")
-          .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
+          .select(
+            "id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous",
+          )
           .in("id", topIds)
           .not("published_at", "is", null);
         setTrending(await decorate(tRows));
@@ -184,18 +217,28 @@ function Dashboard() {
         <div className="relative flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/60 px-3 py-1 text-xs text-primary backdrop-blur">
-              <Sparkles className="h-3 w-3" /> {greeting}{name ? `, ${name}` : ""}
+              <Sparkles className="h-3 w-3" /> {greeting}
+              {name ? `, ${name}` : ""}
             </div>
             <h1 className="font-serif text-3xl leading-tight md:text-5xl">
-              Your stage to <span className="text-primary">teach</span>,<br className="hidden md:block" /> your library to <span className="text-primary">learn</span>.
+              Your stage to <span className="text-primary">Teach</span>,<br className="hidden md:block" /> your library
+              to <span className="text-primary">Learn</span>.
             </h1>
             <p className="mt-3 text-muted-foreground md:text-lg">
               Pick up a draft, ship a new lesson, or dive into what the community just published.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/compose"><Button size="lg" className="shadow-lg shadow-primary/20"><PenLine className="h-4 w-4" /> Write a lesson</Button></Link>
-            <Link to="/settings/profile"><Button size="lg" variant="outline"><Settings className="h-4 w-4" /> Settings</Button></Link>
+            <Link to="/compose">
+              <Button size="lg" className="shadow-lg shadow-primary/20">
+                <PenLine className="h-4 w-4" /> Write a lesson
+              </Button>
+            </Link>
+            <Link to="/settings/profile">
+              <Button size="lg" variant="outline">
+                <Settings className="h-4 w-4" /> Settings
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -210,12 +253,18 @@ function Dashboard() {
                   {resume.cover ? (
                     <img src={resume.cover} alt="" className="h-28 w-28 shrink-0 object-cover" />
                   ) : (
-                    <div className="flex h-28 w-28 shrink-0 items-center justify-center bg-primary/10"><History className="h-6 w-6 text-primary" /></div>
+                    <div className="flex h-28 w-28 shrink-0 items-center justify-center bg-primary/10">
+                      <History className="h-6 w-6 text-primary" />
+                    </div>
                   )}
                   <div className="flex flex-1 flex-col justify-between p-4">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-primary"><History className="mr-1 inline h-3 w-3" /> Continue reading</p>
-                      <h3 className="mt-1 line-clamp-2 font-serif text-base font-semibold group-hover:text-primary">{resume.title}</h3>
+                      <p className="text-xs font-medium uppercase tracking-wider text-primary">
+                        <History className="mr-1 inline h-3 w-3" /> Continue reading
+                      </p>
+                      <h3 className="mt-1 line-clamp-2 font-serif text-base font-semibold group-hover:text-primary">
+                        {resume.title}
+                      </h3>
                     </div>
                     <div className="mt-2">
                       <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -231,7 +280,9 @@ function Dashboard() {
           {top && (
             <Card>
               <Link to="/p/$slug" params={{ slug: top.slug }} className="block p-5">
-                <p className="text-xs font-medium uppercase tracking-wider text-amber-600"><Trophy className="mr-1 inline h-3 w-3" /> Your top lesson</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
+                  <Trophy className="mr-1 inline h-3 w-3" /> Your top lesson
+                </p>
                 <h3 className="mt-1 line-clamp-2 font-serif text-base font-semibold">{top.title}</h3>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-serif text-3xl">{top.views}</span>
@@ -263,11 +314,15 @@ function Dashboard() {
       {trending.length > 0 && (
         <section className="space-y-4">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-primary"><TrendingUp className="mr-1 inline h-3 w-3" /> Trending this week</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-primary">
+              <TrendingUp className="mr-1 inline h-3 w-3" /> Trending this week
+            </p>
             <h2 className="font-serif text-2xl md:text-3xl">What everyone's reading</h2>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {trending.map((item) => <FeedCard key={item.id} item={item} />)}
+            {trending.map((item) => (
+              <FeedCard key={item.id} item={item} />
+            ))}
           </div>
         </section>
       )}
@@ -279,17 +334,28 @@ function Dashboard() {
         <section className="lg:col-span-2 space-y-4">
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-primary"><Flame className="mr-1 inline h-3 w-3" /> Fresh from the community</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-primary">
+                <Flame className="mr-1 inline h-3 w-3" /> Fresh from the community
+              </p>
               <h2 className="font-serif text-2xl md:text-3xl">Just published</h2>
             </div>
-            <Link to="/" className="text-sm text-muted-foreground hover:text-primary">Browse all <ArrowRight className="ml-1 inline h-3 w-3" /></Link>
+            <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
+              Browse all <ArrowRight className="ml-1 inline h-3 w-3" />
+            </Link>
           </div>
 
           {feed.length === 0 ? (
-            <Card><CardContent className="p-10 text-center text-muted-foreground"><BookOpen className="mx-auto mb-2 h-8 w-8" />No published lessons yet — be the first.</CardContent></Card>
+            <Card>
+              <CardContent className="p-10 text-center text-muted-foreground">
+                <BookOpen className="mx-auto mb-2 h-8 w-8" />
+                No published lessons yet — be the first.
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {feed.map((item) => <FeedCard key={item.id} item={item} />)}
+              {feed.map((item) => (
+                <FeedCard key={item.id} item={item} />
+              ))}
             </div>
           )}
         </section>
@@ -298,10 +364,14 @@ function Dashboard() {
         <section className="space-y-4">
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-primary"><FileText className="mr-1 inline h-3 w-3" /> Your work</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-primary">
+                <FileText className="mr-1 inline h-3 w-3" /> Your work
+              </p>
               <h2 className="font-serif text-2xl md:text-3xl">My lessons</h2>
             </div>
-            <Link to="/my-lessons" className="text-sm text-muted-foreground hover:text-primary">All <ArrowRight className="ml-1 inline h-3 w-3" /></Link>
+            <Link to="/my-lessons" className="text-sm text-muted-foreground hover:text-primary">
+              All <ArrowRight className="ml-1 inline h-3 w-3" />
+            </Link>
           </div>
 
           {mine.length === 0 ? (
@@ -309,7 +379,11 @@ function Dashboard() {
               <CardContent className="p-8 text-center">
                 <PenLine className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">You haven't written anything yet.</p>
-                <Link to="/compose"><Button className="mt-4" size="sm">Start your first lesson</Button></Link>
+                <Link to="/compose">
+                  <Button className="mt-4" size="sm">
+                    Start your first lesson
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ) : (
@@ -317,12 +391,30 @@ function Dashboard() {
               {mine.map((p) => (
                 <li key={p.id} className="flex items-center gap-3 p-3">
                   <div className="min-w-0 flex-1">
-                    {p.published_at ? <Badge variant="secondary" className="text-[10px]">Published</Badge> : <Badge variant="outline" className="text-[10px]">Draft</Badge>}
+                    {p.published_at ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Published
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">
+                        Draft
+                      </Badge>
+                    )}
                     <h4 className="mt-1 line-clamp-1 text-sm font-medium">{p.title}</h4>
                   </div>
                   <div className="flex shrink-0 gap-1">
-                    {p.published_at && <Link to="/p/$slug" params={{ slug: p.slug }}><Button variant="ghost" size="sm">View</Button></Link>}
-                    <Link to="/compose" search={{ id: p.id }}><Button variant="outline" size="sm">Edit</Button></Link>
+                    {p.published_at && (
+                      <Link to="/p/$slug" params={{ slug: p.slug }}>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    )}
+                    <Link to="/compose" search={{ id: p.id }}>
+                      <Button variant="outline" size="sm">
+                        Edit
+                      </Button>
+                    </Link>
                   </div>
                 </li>
               ))}
@@ -336,24 +428,34 @@ function Dashboard() {
 
 function FeedCard({ item }: { item: Feed }) {
   // Show username only (strip title prefix like "Mr Dr.") and posted date — not read time.
-  const handle = (item.author_label || "")
-    .replace(/^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "")
-    .replace(/^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "")
-    .trim() || "Anonymous";
-  const when = item.published_at
-    ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true })
-    : "";
+  const handle =
+    (item.author_label || "")
+      .replace(/^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "")
+      .replace(/^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "")
+      .trim() || "Anonymous";
+  const when = item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true }) : "";
   return (
     <Link to="/p/$slug" params={{ slug: item.slug }} className="group">
       <article className="flex h-full gap-3 overflow-hidden rounded-xl border bg-card p-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
         {item.cover_image_url ? (
-          <img src={item.cover_image_url} alt={item.title} loading="lazy" className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+          <img
+            src={item.cover_image_url}
+            alt={item.title}
+            loading="lazy"
+            className="h-20 w-20 shrink-0 rounded-lg object-cover"
+          />
         ) : (
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10"><BookOpen className="h-6 w-6 text-primary/60" /></div>
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <BookOpen className="h-6 w-6 text-primary/60" />
+          </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap gap-1">
-            {item.tags.slice(0, 2).map((t) => <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>)}
+            {item.tags.slice(0, 2).map((t) => (
+              <Badge key={t} variant="secondary" className="text-[10px]">
+                {t}
+              </Badge>
+            ))}
           </div>
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-primary">{item.title}</h3>
           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -362,7 +464,12 @@ function FeedCard({ item }: { item: Feed }) {
               <AvatarFallback className="bg-primary/10 text-[8px] text-primary">{initialsFor(handle)}</AvatarFallback>
             </Avatar>
             <span className="truncate font-medium text-foreground/80">@{handle}</span>
-            {when && <><span>·</span><span className="truncate">{when}</span></>}
+            {when && (
+              <>
+                <span>·</span>
+                <span className="truncate">{when}</span>
+              </>
+            )}
           </div>
         </div>
       </article>
