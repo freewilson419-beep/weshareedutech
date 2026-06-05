@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { safeHref } from "@/lib/safe-url";
 
 interface Notif { id: string; title: string; body: string; link: string; is_read: boolean; created_at: string; }
 
@@ -50,7 +51,7 @@ export function NotificationsBell() {
           {items.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">You're all caught up</p>
           ) : items.map((n) => (
-            <a key={n.id} href={n.link || "#"} className="block border-b p-3 text-sm hover:bg-accent">
+            <a key={n.id} href={safeHref(n.link)} className="block border-b p-3 text-sm hover:bg-accent">
               <div className="font-medium">{n.title}</div>
               {n.body && <div className="text-muted-foreground">{n.body}</div>}
             </a>

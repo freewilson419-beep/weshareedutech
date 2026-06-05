@@ -199,9 +199,9 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
     z.object({
       title: z.string().min(1).max(200),
       body: z.string().min(1).max(4000),
-      imageUrl: z.string().url().max(1000).optional().or(z.literal("")),
+      imageUrl: z.string().url().max(1000).regex(/^https?:\/\//i, "Image URL must be http(s)").optional().or(z.literal("")),
       ctaLabel: z.string().min(1).max(40).optional(),
-      ctaUrl: z.string().min(1).max(500).optional(),
+      ctaUrl: z.string().max(500).regex(/^(https?:\/\/|\/)/i, "CTA URL must be http(s) or start with /").optional(),
       targetUserIds: z.array(z.string().uuid()).max(10000).optional(),
     }).parse(d),
   )
@@ -306,9 +306,9 @@ export const adminUpdateAnnouncement = createServerFn({ method: "POST" })
       id: z.string().uuid(),
       title: z.string().min(1).max(200),
       body: z.string().min(1).max(4000),
-      imageUrl: z.string().url().max(1000).optional().or(z.literal("")),
+      imageUrl: z.string().url().max(1000).regex(/^https?:\/\//i, "Image URL must be http(s)").optional().or(z.literal("")),
       ctaLabel: z.string().min(1).max(40).optional(),
-      ctaUrl: z.string().min(1).max(500).optional(),
+      ctaUrl: z.string().max(500).regex(/^(https?:\/\/|\/)/i, "CTA URL must be http(s) or start with /").optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {

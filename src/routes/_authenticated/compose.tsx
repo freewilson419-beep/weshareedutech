@@ -128,6 +128,10 @@ function Compose() {
   const save = async (publish: boolean) => {
     if (!user) return;
     if (!form.title.trim()) return toast.error("Add a title first");
+    const urlOk = (v: string) => !v || /^https?:\/\//i.test(v);
+    if (!urlOk(form.quiz_url.trim())) return toast.error("Quiz URL must start with https://");
+    if (!urlOk(form.download_url.trim())) return toast.error("Download URL must start with https://");
+    if (!urlOk(form.reflection_form_url.trim())) return toast.error("Reflection form URL must start with https://");
     const base = buildPayload();
     const slug = slugify(form.title) + "-" + Math.random().toString(36).slice(2, 7);
     const publishedAt = publish ? new Date().toISOString() : null;

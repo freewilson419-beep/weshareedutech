@@ -13,6 +13,7 @@ import { initialsFor } from "@/lib/author-display";
 import { ReportLessonButton } from "@/components/report-lesson-button";
 import { SiteFooter } from "@/components/site-footer";
 import { VoiceRecorder } from "@/components/voice-recorder";
+import { safeHref } from "@/lib/safe-url";
 
 interface Post {
   id: string;
@@ -343,7 +344,7 @@ function ArticleView() {
         {post.download_url && (
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 rounded-lg border bg-primary/5 p-4">
             <p className="text-sm text-muted-foreground">Want a copy to study offline?</p>
-            <a href={post.download_url} target="_blank" rel="noreferrer">
+            <a href={safeHref(post.download_url)} target="_blank" rel="noreferrer">
               <Button><Download className="h-4 w-4" /> Download Learning Material</Button>
             </a>
           </div>
@@ -357,7 +358,7 @@ function ArticleView() {
           <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection}>
             {post.reflection_form_url && (
               <div className="mt-4">
-                <a href={post.reflection_form_url} target="_blank" rel="noreferrer">
+                <a href={safeHref(post.reflection_form_url)} target="_blank" rel="noreferrer">
                   <Button variant="outline"><ClipboardList className="h-4 w-4" /> Open reflection form <ExternalLink className="h-3.5 w-3.5" /></Button>
                 </a>
               </div>
@@ -385,7 +386,7 @@ function ArticleView() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Nice work — your Learn-to-Teach voice note is in. You're cleared to take the exam.
                 </p>
-                <a href={post.quiz_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
+                <a href={safeHref(post.quiz_url)} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
                   <Button>Take the quiz <ExternalLink className="h-4 w-4" /></Button>
                 </a>
               </>
