@@ -237,9 +237,18 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
 
     let usersQuery = supabaseAdmin.from("profiles").select("user_id,email,title,surname,othernames");
     if (targets) usersQuery = usersQuery.in("user_id", targets);
-    const { data: users } = await usersQuery;
+    // Page through users to bypass 1k cap
+    const PAGE_U = 1000;
+    const allUsers: any[] = [];
+    for (let from = 0; from < 100000; from += PAGE_U) {
+      const { data } = await usersQuery.range(from, from + PAGE_U - 1);
+      if (!data || data.length === 0) break;
+      allUsers.push(...data);
+      if (data.length < PAGE_U) break;
+      if (targets) break; // targeted list is short; one page is enough
+    }
 
-    const notifRows = (users ?? []).map((u: any) => ({
+    const notifRows = allUsers.map((u: any) => ({
       user_id: u.user_id,
       kind: "announcement",
       title: data.title,
@@ -252,60 +261,69 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       }
     }
 
-    // Render + enqueue an email per user (queue handles rate limits + retries)
+    // Pre-render the email ONCE (per-user fields like recipientName are interpolated in template,
+    // but we render with a generic name to keep enqueue O(1) per user instead of O(N) renders).
     const tpl = TEMPLATES["announcement"];
+    const sharedProps = {
+      title: data.title, body: data.body,
+      imageUrl: imageUrl || undefined, ctaLabel, ctaUrl,
+    };
+    const sharedElement = React.createElement(tpl.component, sharedProps);
+    const sharedHtml = await render(sharedElement);
+    const sharedText = await render(sharedElement, { plainText: true });
+    const subject = typeof tpl.subject === "function" ? tpl.subject(sharedProps) : tpl.subject;
+
+    // Pull suppression list once
+    const suppressed = new Set<string>();
+    {
+      const { data: sup } = await supabaseAdmin.from("suppressed_emails").select("email").range(0, 49999);
+      for (const r of sup ?? []) suppressed.add(String((r as any).email).toLowerCase());
+    }
+
     let emailsQueued = 0;
-    for (const u of (users ?? []) as any[]) {
-      const email = (u.email || "").trim();
-      if (!email || !email.includes("@")) continue;
-      const lc = email.toLowerCase();
-      const { data: sup } = await supabaseAdmin
-        .from("suppressed_emails").select("id").eq("email", lc).maybeSingle();
-      if (sup) continue;
+    // Parallel enqueue in chunks to avoid serverless timeout on 1k+ users
+    const CHUNK = 100;
+    for (let i = 0; i < allUsers.length; i += CHUNK) {
+      const slice = allUsers.slice(i, i + CHUNK);
+      await Promise.all(slice.map(async (u: any) => {
+        const email = (u.email || "").trim();
+        if (!email || !email.includes("@")) return;
+        const lc = email.toLowerCase();
+        if (suppressed.has(lc)) return;
 
-      // Reuse or create unsubscribe token
-      let unsubToken: string | null = null;
-      const { data: existing } = await supabaseAdmin
-        .from("email_unsubscribe_tokens").select("token,used_at").eq("email", lc).maybeSingle();
-      if (existing && !existing.used_at) unsubToken = existing.token;
-      else if (!existing) {
-        unsubToken = genToken();
-        await supabaseAdmin.from("email_unsubscribe_tokens")
-          .upsert({ token: unsubToken, email: lc }, { onConflict: "email", ignoreDuplicates: true });
-      } else continue;
+        // Reuse or create unsubscribe token
+        let unsubToken: string | null = null;
+        const { data: existing } = await supabaseAdmin
+          .from("email_unsubscribe_tokens").select("token,used_at").eq("email", lc).maybeSingle();
+        if (existing && !existing.used_at) unsubToken = existing.token;
+        else if (!existing) {
+          unsubToken = genToken();
+          await supabaseAdmin.from("email_unsubscribe_tokens")
+            .upsert({ token: unsubToken, email: lc }, { onConflict: "email", ignoreDuplicates: true });
+        } else return;
 
-      const name = [u.title, u.surname, u.othernames].filter(Boolean).join(" ").trim() || undefined;
-      const props = {
-        title: data.title, body: data.body, recipientName: name,
-        imageUrl: imageUrl || undefined, ctaLabel, ctaUrl,
-      };
-      const element = React.createElement(tpl.component, props);
-      const html = await render(element);
-      const text = await render(element, { plainText: true });
-      const subject = typeof tpl.subject === "function" ? tpl.subject(props) : tpl.subject;
-      const messageId = crypto.randomUUID();
-
-      await supabaseAdmin.from("email_send_log").insert({
-        message_id: messageId, template_name: "announcement",
-        recipient_email: email, status: "pending",
-      });
-
-      const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
-        queue_name: "transactional_emails",
-        payload: {
-          message_id: messageId,
-          to: email,
-          from: `${EMAIL_SITE_NAME} <noreply@${EMAIL_FROM_DOMAIN}>`,
-          sender_domain: EMAIL_SENDER_DOMAIN,
-          subject, html, text,
-          purpose: "transactional",
-          label: "announcement",
-          idempotency_key: `announcement-${ann.id}-${u.user_id}`,
-          unsubscribe_token: unsubToken,
-          queued_at: new Date().toISOString(),
-        },
-      });
-      if (!enqErr) emailsQueued++;
+        const messageId = crypto.randomUUID();
+        await supabaseAdmin.from("email_send_log").insert({
+          message_id: messageId, template_name: "announcement",
+          recipient_email: email, status: "pending",
+        });
+        const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
+          queue_name: "transactional_emails",
+          payload: {
+            message_id: messageId,
+            to: email,
+            from: `${EMAIL_SITE_NAME} <noreply@${EMAIL_FROM_DOMAIN}>`,
+            sender_domain: EMAIL_SENDER_DOMAIN,
+            subject, html: sharedHtml, text: sharedText,
+            purpose: "transactional",
+            label: "announcement",
+            idempotency_key: `announcement-${ann.id}-${u.user_id}`,
+            unsubscribe_token: unsubToken,
+            queued_at: new Date().toISOString(),
+          },
+        });
+        if (!enqErr) emailsQueued++;
+      }));
     }
 
     return { id: ann.id, recipients: notifRows.length, emailsQueued };
