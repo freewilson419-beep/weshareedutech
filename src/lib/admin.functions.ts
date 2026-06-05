@@ -33,42 +33,38 @@ export const adminGetOverview = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
-    const [users, posts, published, drafts, viewsRecent, claps, roles, recent, topRows] = await Promise.all([
+    const [users, posts, published, drafts, viewsRecent, claps, pCount, lCount, aCount, recent, topRows] = await Promise.all([
       supabaseAdmin.from("profiles").select("user_id", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).is("published_at", null),
       supabaseAdmin.from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since),
       supabaseAdmin.from("claps").select("count"),
-      supabaseAdmin.from("user_roles").select("role"),
+      supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "participant"),
+      supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "lecturer"),
+      supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "admin"),
       supabaseAdmin
         .from("profiles")
         .select("user_id,title,surname,othernames,username,department,avatar_url,created_at")
         .order("created_at", { ascending: false })
         .limit(5),
+      // Use posts.view_count (trigger-maintained) for top lessons to avoid the 1k cap on lesson_views
       supabaseAdmin
-        .from("lesson_views")
-        .select("post_id")
-        .gte("created_at", since)
-        .limit(5000),
+        .from("posts")
+        .select("id,title,slug,is_anonymous,author_user_id,view_count")
+        .not("published_at", "is", null)
+        .order("view_count", { ascending: false })
+        .limit(5),
     ]);
 
     const totalClaps = (claps.data ?? []).reduce((s, r: any) => s + (r.count ?? 0), 0);
-    const roleCounts = { admin: 0, lecturer: 0, participant: 0 } as Record<string, number>;
-    for (const r of roles.data ?? []) roleCounts[(r as any).role] = (roleCounts[(r as any).role] ?? 0) + 1;
+    const roleCounts = {
+      participant: pCount.count ?? 0,
+      lecturer: lCount.count ?? 0,
+      admin: aCount.count ?? 0,
+    } as Record<string, number>;
 
-    const viewCount = new Map<string, number>();
-    for (const v of (topRows.data ?? []) as any[]) viewCount.set(v.post_id, (viewCount.get(v.post_id) ?? 0) + 1);
-    const topIds = [...viewCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id]) => id);
-    let topLessons: any[] = [];
-    if (topIds.length) {
-      const { data } = await supabaseAdmin
-        .from("posts")
-        .select("id,title,slug,is_anonymous,author_user_id")
-        .in("id", topIds);
-      topLessons = (data ?? []).map((p: any) => ({ ...p, views: viewCount.get(p.id) ?? 0 }))
-        .sort((a, b) => b.views - a.views);
-    }
+    const topLessons = (topRows.data ?? []).map((p: any) => ({ ...p, views: p.view_count ?? 0 }));
 
     return {
       stats: {
@@ -89,16 +85,32 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabaseAdmin
+    // Lift the implicit 1000-row PostgREST cap by paging through profiles.
+    const PAGE = 1000;
+    const allProfiles: any[] = [];
+    for (let from = 0; from < 50000; from += PAGE) {
+      const { data, error } = await supabaseAdmin
         .from("profiles")
-        .select("user_id,email,title,surname,othernames,username,department,affiliation,avatar_url,created_at,username_edits_used")
-        .order("created_at", { ascending: false }),
-      supabaseAdmin.from("user_roles").select("user_id,role"),
-    ]);
+        .select("user_id,email,title,surname,othernames,username,phone_number,whatsapp_number,department,affiliation,avatar_url,created_at,username_edits_used")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+      allProfiles.push(...data);
+      if (data.length < PAGE) break;
+    }
+    const allRoles: any[] = [];
+    for (let from = 0; from < 50000; from += PAGE) {
+      const { data, error } = await supabaseAdmin
+        .from("user_roles").select("user_id,role").range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+      allRoles.push(...data);
+      if (data.length < PAGE) break;
+    }
     const roleMap = new Map<string, string>();
-    for (const r of roles ?? []) roleMap.set((r as any).user_id, (r as any).role);
-    return (profiles ?? []).map((p: any) => ({ ...p, role: roleMap.get(p.user_id) ?? "participant" }));
+    for (const r of allRoles) roleMap.set(r.user_id, r.role);
+    return allProfiles.map((p: any) => ({ ...p, role: roleMap.get(p.user_id) ?? "participant" }));
   });
 
 export const adminSetUserRole = createServerFn({ method: "POST" })
