@@ -152,7 +152,7 @@ export const adminListLessons = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     let q = supabaseAdmin
       .from("posts")
-      .select("id,title,slug,cover_image_url,is_anonymous,published_at,created_at,author_user_id")
+      .select("id,title,slug,cover_image_url,is_anonymous,published_at,created_at,author_user_id,view_count")
       .order("created_at", { ascending: false })
       .limit(200);
     if (data.filter === "published") q = q.not("published_at", "is", null);
@@ -163,23 +163,18 @@ export const adminListLessons = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const authorIds = [...new Set((posts ?? []).map((p: any) => p.author_user_id))];
-    const [{ data: authors }, { data: views }] = await Promise.all([
-      authorIds.length
-        ? supabaseAdmin
-            .from("profiles")
-            .select("user_id,title,surname,username,avatar_url")
-            .in("user_id", authorIds)
-        : Promise.resolve({ data: [] as any[] }),
-      supabaseAdmin.from("lesson_views").select("post_id"),
-    ]);
+    const { data: authors } = authorIds.length
+      ? await supabaseAdmin
+          .from("profiles")
+          .select("user_id,title,surname,username,avatar_url")
+          .in("user_id", authorIds)
+      : { data: [] as any[] };
     const authorMap = new Map<string, any>();
     for (const a of authors ?? []) authorMap.set((a as any).user_id, a);
-    const viewMap = new Map<string, number>();
-    for (const v of (views ?? []) as any[]) viewMap.set(v.post_id, (viewMap.get(v.post_id) ?? 0) + 1);
     return (posts ?? []).map((p: any) => ({
       ...p,
       author: authorMap.get(p.author_user_id) ?? null,
-      views: viewMap.get(p.id) ?? 0,
+      views: p.view_count ?? 0,
     }));
   });
 
