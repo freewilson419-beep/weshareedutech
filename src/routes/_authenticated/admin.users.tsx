@@ -137,6 +137,9 @@ function AdminUsers() {
                     {(u.username_edits_used ?? 0) >= 1 && <span className="ml-1 text-amber-600">(used username edit)</span>}
                   </p>
                 </div>
+                <Button variant="ghost" size="icon" title="View full details" onClick={() => setDetails(u)}>
+                  <Info className="h-4 w-4" />
+                </Button>
                 <Button variant="ghost" size="icon" title="Edit username" onClick={() => { setEditing({ userId: u.user_id, name, current: u.username || "" }); setNewUsername(u.username || ""); }}>
                   <AtSign className="h-4 w-4" />
                 </Button>
