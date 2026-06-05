@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock, Megaphone, Send } from "lucide-react";
+import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock, Megaphone, Send, Info, Mail, Phone, MessageCircle } from "lucide-react";
 import { adminListUsers, adminSetUserRole, adminDeleteUser, adminBroadcastAnnouncement } from "@/lib/admin.functions";
 import { adminResetUsernameEdit, adminSetUsername } from "@/lib/account.functions";
 import { authorName, initialsFor } from "@/lib/author-display";
@@ -40,6 +40,7 @@ function AdminUsers() {
   const [aTitle, setATitle] = useState("");
   const [aBody, setABody] = useState("");
   const [aSending, setASending] = useState(false);
+  const [details, setDetails] = useState<any | null>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
 
@@ -136,6 +137,9 @@ function AdminUsers() {
                     {(u.username_edits_used ?? 0) >= 1 && <span className="ml-1 text-amber-600">(used username edit)</span>}
                   </p>
                 </div>
+                <Button variant="ghost" size="icon" title="View full details" onClick={() => setDetails(u)}>
+                  <Info className="h-4 w-4" />
+                </Button>
                 <Button variant="ghost" size="icon" title="Edit username" onClick={() => { setEditing({ userId: u.user_id, name, current: u.username || "" }); setNewUsername(u.username || ""); }}>
                   <AtSign className="h-4 w-4" />
                 </Button>
@@ -231,6 +235,52 @@ function AdminUsers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!details} onOpenChange={(v) => { if (!v) setDetails(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User details</DialogTitle>
+            <DialogDescription>Full contact and profile information.</DialogDescription>
+          </DialogHeader>
+          {details && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={details.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary">{initialsFor(authorName(details, false))}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{[details.title, details.surname, details.othernames].filter(Boolean).join(" ").trim() || "—"}</p>
+                  <p className="text-xs text-muted-foreground">@{details.username || "—"} · <span className="capitalize">{details.role}</span></p>
+                </div>
+              </div>
+              <div className="space-y-2 rounded-md border p-3">
+                <Row icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={details.email || "—"} />
+                <Row icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={details.phone_number || "—"} />
+                <Row icon={<MessageCircle className="h-3.5 w-3.5" />} label="WhatsApp" value={details.whatsapp_number || "—"} />
+                <Row icon={<AtSign className="h-3.5 w-3.5" />} label="Username" value={details.username || "—"} />
+                <Row label="Department" value={details.department || "—"} />
+                <Row label="Affiliation" value={details.affiliation || "—"} />
+                <Row label="Joined" value={new Date(details.created_at).toLocaleString()} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDetails(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Row({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 inline-flex w-24 shrink-0 items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground">
+        {icon}{label}
+      </span>
+      <span className="flex-1 break-words text-sm">{value}</span>
     </div>
   );
 }

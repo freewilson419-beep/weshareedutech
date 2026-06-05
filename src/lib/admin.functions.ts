@@ -33,42 +33,38 @@ export const adminGetOverview = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
-    const [users, posts, published, drafts, viewsRecent, claps, roles, recent, topRows] = await Promise.all([
+    const [users, posts, published, drafts, viewsRecent, claps, pCount, lCount, aCount, recent, topRows] = await Promise.all([
       supabaseAdmin.from("profiles").select("user_id", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).is("published_at", null),
       supabaseAdmin.from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since),
       supabaseAdmin.from("claps").select("count"),
-      supabaseAdmin.from("user_roles").select("role"),
+      supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "participant"),
+      supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "lecturer"),
+      supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "admin"),
       supabaseAdmin
         .from("profiles")
         .select("user_id,title,surname,othernames,username,department,avatar_url,created_at")
         .order("created_at", { ascending: false })
         .limit(5),
+      // Use posts.view_count (trigger-maintained) for top lessons to avoid the 1k cap on lesson_views
       supabaseAdmin
-        .from("lesson_views")
-        .select("post_id")
-        .gte("created_at", since)
-        .limit(5000),
+        .from("posts")
+        .select("id,title,slug,is_anonymous,author_user_id,view_count")
+        .not("published_at", "is", null)
+        .order("view_count", { ascending: false })
+        .limit(5),
     ]);
 
     const totalClaps = (claps.data ?? []).reduce((s, r: any) => s + (r.count ?? 0), 0);
-    const roleCounts = { admin: 0, lecturer: 0, participant: 0 } as Record<string, number>;
-    for (const r of roles.data ?? []) roleCounts[(r as any).role] = (roleCounts[(r as any).role] ?? 0) + 1;
+    const roleCounts = {
+      participant: pCount.count ?? 0,
+      lecturer: lCount.count ?? 0,
+      admin: aCount.count ?? 0,
+    } as Record<string, number>;
 
-    const viewCount = new Map<string, number>();
-    for (const v of (topRows.data ?? []) as any[]) viewCount.set(v.post_id, (viewCount.get(v.post_id) ?? 0) + 1);
-    const topIds = [...viewCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id]) => id);
-    let topLessons: any[] = [];
-    if (topIds.length) {
-      const { data } = await supabaseAdmin
-        .from("posts")
-        .select("id,title,slug,is_anonymous,author_user_id")
-        .in("id", topIds);
-      topLessons = (data ?? []).map((p: any) => ({ ...p, views: viewCount.get(p.id) ?? 0 }))
-        .sort((a, b) => b.views - a.views);
-    }
+    const topLessons = (topRows.data ?? []).map((p: any) => ({ ...p, views: p.view_count ?? 0 }));
 
     return {
       stats: {
@@ -89,16 +85,32 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabaseAdmin
+    // Lift the implicit 1000-row PostgREST cap by paging through profiles.
+    const PAGE = 1000;
+    const allProfiles: any[] = [];
+    for (let from = 0; from < 50000; from += PAGE) {
+      const { data, error } = await supabaseAdmin
         .from("profiles")
-        .select("user_id,email,title,surname,othernames,username,department,affiliation,avatar_url,created_at,username_edits_used")
-        .order("created_at", { ascending: false }),
-      supabaseAdmin.from("user_roles").select("user_id,role"),
-    ]);
+        .select("user_id,email,title,surname,othernames,username,phone_number,whatsapp_number,department,affiliation,avatar_url,created_at,username_edits_used")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+      allProfiles.push(...data);
+      if (data.length < PAGE) break;
+    }
+    const allRoles: any[] = [];
+    for (let from = 0; from < 50000; from += PAGE) {
+      const { data, error } = await supabaseAdmin
+        .from("user_roles").select("user_id,role").range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+      allRoles.push(...data);
+      if (data.length < PAGE) break;
+    }
     const roleMap = new Map<string, string>();
-    for (const r of roles ?? []) roleMap.set((r as any).user_id, (r as any).role);
-    return (profiles ?? []).map((p: any) => ({ ...p, role: roleMap.get(p.user_id) ?? "participant" }));
+    for (const r of allRoles) roleMap.set(r.user_id, r.role);
+    return allProfiles.map((p: any) => ({ ...p, role: roleMap.get(p.user_id) ?? "participant" }));
   });
 
 export const adminSetUserRole = createServerFn({ method: "POST" })
@@ -140,7 +152,7 @@ export const adminListLessons = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     let q = supabaseAdmin
       .from("posts")
-      .select("id,title,slug,cover_image_url,is_anonymous,published_at,created_at,author_user_id")
+      .select("id,title,slug,cover_image_url,is_anonymous,published_at,created_at,author_user_id,view_count")
       .order("created_at", { ascending: false })
       .limit(200);
     if (data.filter === "published") q = q.not("published_at", "is", null);
@@ -151,23 +163,18 @@ export const adminListLessons = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const authorIds = [...new Set((posts ?? []).map((p: any) => p.author_user_id))];
-    const [{ data: authors }, { data: views }] = await Promise.all([
-      authorIds.length
-        ? supabaseAdmin
-            .from("profiles")
-            .select("user_id,title,surname,username,avatar_url")
-            .in("user_id", authorIds)
-        : Promise.resolve({ data: [] as any[] }),
-      supabaseAdmin.from("lesson_views").select("post_id"),
-    ]);
+    const { data: authors } = authorIds.length
+      ? await supabaseAdmin
+          .from("profiles")
+          .select("user_id,title,surname,username,avatar_url")
+          .in("user_id", authorIds)
+      : { data: [] as any[] };
     const authorMap = new Map<string, any>();
     for (const a of authors ?? []) authorMap.set((a as any).user_id, a);
-    const viewMap = new Map<string, number>();
-    for (const v of (views ?? []) as any[]) viewMap.set(v.post_id, (viewMap.get(v.post_id) ?? 0) + 1);
     return (posts ?? []).map((p: any) => ({
       ...p,
       author: authorMap.get(p.author_user_id) ?? null,
-      views: viewMap.get(p.id) ?? 0,
+      views: p.view_count ?? 0,
     }));
   });
 
@@ -225,9 +232,18 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
 
     let usersQuery = supabaseAdmin.from("profiles").select("user_id,email,title,surname,othernames");
     if (targets) usersQuery = usersQuery.in("user_id", targets);
-    const { data: users } = await usersQuery;
+    // Page through users to bypass 1k cap
+    const PAGE_U = 1000;
+    const allUsers: any[] = [];
+    for (let from = 0; from < 100000; from += PAGE_U) {
+      const { data } = await usersQuery.range(from, from + PAGE_U - 1);
+      if (!data || data.length === 0) break;
+      allUsers.push(...data);
+      if (data.length < PAGE_U) break;
+      if (targets) break; // targeted list is short; one page is enough
+    }
 
-    const notifRows = (users ?? []).map((u: any) => ({
+    const notifRows = allUsers.map((u: any) => ({
       user_id: u.user_id,
       kind: "announcement",
       title: data.title,
@@ -240,60 +256,69 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       }
     }
 
-    // Render + enqueue an email per user (queue handles rate limits + retries)
+    // Pre-render the email ONCE (per-user fields like recipientName are interpolated in template,
+    // but we render with a generic name to keep enqueue O(1) per user instead of O(N) renders).
     const tpl = TEMPLATES["announcement"];
+    const sharedProps = {
+      title: data.title, body: data.body,
+      imageUrl: imageUrl || undefined, ctaLabel, ctaUrl,
+    };
+    const sharedElement = React.createElement(tpl.component, sharedProps);
+    const sharedHtml = await render(sharedElement);
+    const sharedText = await render(sharedElement, { plainText: true });
+    const subject = typeof tpl.subject === "function" ? tpl.subject(sharedProps) : tpl.subject;
+
+    // Pull suppression list once
+    const suppressed = new Set<string>();
+    {
+      const { data: sup } = await supabaseAdmin.from("suppressed_emails").select("email").range(0, 49999);
+      for (const r of sup ?? []) suppressed.add(String((r as any).email).toLowerCase());
+    }
+
     let emailsQueued = 0;
-    for (const u of (users ?? []) as any[]) {
-      const email = (u.email || "").trim();
-      if (!email || !email.includes("@")) continue;
-      const lc = email.toLowerCase();
-      const { data: sup } = await supabaseAdmin
-        .from("suppressed_emails").select("id").eq("email", lc).maybeSingle();
-      if (sup) continue;
+    // Parallel enqueue in chunks to avoid serverless timeout on 1k+ users
+    const CHUNK = 100;
+    for (let i = 0; i < allUsers.length; i += CHUNK) {
+      const slice = allUsers.slice(i, i + CHUNK);
+      await Promise.all(slice.map(async (u: any) => {
+        const email = (u.email || "").trim();
+        if (!email || !email.includes("@")) return;
+        const lc = email.toLowerCase();
+        if (suppressed.has(lc)) return;
 
-      // Reuse or create unsubscribe token
-      let unsubToken: string | null = null;
-      const { data: existing } = await supabaseAdmin
-        .from("email_unsubscribe_tokens").select("token,used_at").eq("email", lc).maybeSingle();
-      if (existing && !existing.used_at) unsubToken = existing.token;
-      else if (!existing) {
-        unsubToken = genToken();
-        await supabaseAdmin.from("email_unsubscribe_tokens")
-          .upsert({ token: unsubToken, email: lc }, { onConflict: "email", ignoreDuplicates: true });
-      } else continue;
+        // Reuse or create unsubscribe token
+        let unsubToken: string | null = null;
+        const { data: existing } = await supabaseAdmin
+          .from("email_unsubscribe_tokens").select("token,used_at").eq("email", lc).maybeSingle();
+        if (existing && !existing.used_at) unsubToken = existing.token;
+        else if (!existing) {
+          unsubToken = genToken();
+          await supabaseAdmin.from("email_unsubscribe_tokens")
+            .upsert({ token: unsubToken, email: lc }, { onConflict: "email", ignoreDuplicates: true });
+        } else return;
 
-      const name = [u.title, u.surname, u.othernames].filter(Boolean).join(" ").trim() || undefined;
-      const props = {
-        title: data.title, body: data.body, recipientName: name,
-        imageUrl: imageUrl || undefined, ctaLabel, ctaUrl,
-      };
-      const element = React.createElement(tpl.component, props);
-      const html = await render(element);
-      const text = await render(element, { plainText: true });
-      const subject = typeof tpl.subject === "function" ? tpl.subject(props) : tpl.subject;
-      const messageId = crypto.randomUUID();
-
-      await supabaseAdmin.from("email_send_log").insert({
-        message_id: messageId, template_name: "announcement",
-        recipient_email: email, status: "pending",
-      });
-
-      const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
-        queue_name: "transactional_emails",
-        payload: {
-          message_id: messageId,
-          to: email,
-          from: `${EMAIL_SITE_NAME} <noreply@${EMAIL_FROM_DOMAIN}>`,
-          sender_domain: EMAIL_SENDER_DOMAIN,
-          subject, html, text,
-          purpose: "transactional",
-          label: "announcement",
-          idempotency_key: `announcement-${ann.id}-${u.user_id}`,
-          unsubscribe_token: unsubToken,
-          queued_at: new Date().toISOString(),
-        },
-      });
-      if (!enqErr) emailsQueued++;
+        const messageId = crypto.randomUUID();
+        await supabaseAdmin.from("email_send_log").insert({
+          message_id: messageId, template_name: "announcement",
+          recipient_email: email, status: "pending",
+        });
+        const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
+          queue_name: "transactional_emails",
+          payload: {
+            message_id: messageId,
+            to: email,
+            from: `${EMAIL_SITE_NAME} <noreply@${EMAIL_FROM_DOMAIN}>`,
+            sender_domain: EMAIL_SENDER_DOMAIN,
+            subject, html: sharedHtml, text: sharedText,
+            purpose: "transactional",
+            label: "announcement",
+            idempotency_key: `announcement-${ann.id}-${u.user_id}`,
+            unsubscribe_token: unsubToken,
+            queued_at: new Date().toISOString(),
+          },
+        });
+        if (!enqErr) emailsQueued++;
+      }));
     }
 
     return { id: ann.id, recipients: notifRows.length, emailsQueued };

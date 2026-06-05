@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, Clock, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings } from "lucide-react";
+import { PenLine, Eye, BookmarkIcon, FileText, Sparkles, Flame, ArrowRight, BookOpen, TrendingUp, History, Trophy, Settings } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { authorName, initialsFor } from "@/lib/author-display";
 import { MyGrades } from "@/components/my-grades";
 
@@ -334,6 +335,14 @@ function Dashboard() {
 }
 
 function FeedCard({ item }: { item: Feed }) {
+  // Show username only (strip title prefix like "Mr Dr.") and posted date — not read time.
+  const handle = (item.author_label || "")
+    .replace(/^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "")
+    .replace(/^(Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, "")
+    .trim() || "Anonymous";
+  const when = item.published_at
+    ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true })
+    : "";
   return (
     <Link to="/p/$slug" params={{ slug: item.slug }} className="group">
       <article className="flex h-full gap-3 overflow-hidden rounded-xl border bg-card p-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
@@ -349,12 +358,11 @@ function FeedCard({ item }: { item: Feed }) {
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-primary">{item.title}</h3>
           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Avatar className="h-4 w-4">
-              <AvatarImage src={item.author_avatar || undefined} alt={item.author_label} />
-              <AvatarFallback className="bg-primary/10 text-[8px] text-primary">{initialsFor(item.author_label || "?")}</AvatarFallback>
+              <AvatarImage src={item.author_avatar || undefined} alt={handle} />
+              <AvatarFallback className="bg-primary/10 text-[8px] text-primary">{initialsFor(handle)}</AvatarFallback>
             </Avatar>
-            <span className="truncate font-medium text-foreground/80">{item.author_label}</span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{item.read_time_minutes}m</span>
+            <span className="truncate font-medium text-foreground/80">@{handle}</span>
+            {when && <><span>·</span><span className="truncate">{when}</span></>}
           </div>
         </div>
       </article>
