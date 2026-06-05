@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock, Megaphone, Send } from "lucide-react";
+import { Loader2, Search, Trash2, RefreshCcw, AtSign, Unlock, Megaphone, Send, Info, Mail, Phone, MessageCircle } from "lucide-react";
 import { adminListUsers, adminSetUserRole, adminDeleteUser, adminBroadcastAnnouncement } from "@/lib/admin.functions";
 import { adminResetUsernameEdit, adminSetUsername } from "@/lib/account.functions";
 import { authorName, initialsFor } from "@/lib/author-display";
@@ -40,6 +40,7 @@ function AdminUsers() {
   const [aTitle, setATitle] = useState("");
   const [aBody, setABody] = useState("");
   const [aSending, setASending] = useState(false);
+  const [details, setDetails] = useState<any | null>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
 
