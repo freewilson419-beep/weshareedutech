@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -19,6 +17,7 @@ const REASONS = [
   { value: "copyright", label: "Copyright violation" },
   { value: "misinformation", label: "Misinformation" },
   { value: "harassment", label: "Harassment or hate" },
+  { value: "rubbish", label: "non-reasonable" },
   { value: "other", label: "Other" },
 ] as const;
 
@@ -34,7 +33,7 @@ export function ReportLessonButton({ postId }: { postId: string }) {
     setBusy(true);
     try {
       await fn({ data: { postId, reason: reason as any, details: details.trim() } });
-      toast.success("Thanks — our team will review");
+      toast.success("Thanks — Admin will review soon");
       setOpen(false);
       setDetails("");
       setReason("spam");
@@ -68,10 +67,14 @@ export function ReportLessonButton({ postId }: { postId: string }) {
           <div>
             <Label className="mb-1.5 block text-sm">Reason</Label>
             <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {REASONS.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -88,7 +91,9 @@ export function ReportLessonButton({ postId }: { postId: string }) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={busy}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             Submit report
