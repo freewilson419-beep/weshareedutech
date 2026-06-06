@@ -162,7 +162,17 @@ export const gradeAllPending = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const post = await assertCanModerate(context.userId, data.postId);
-    const perCall = data.limit ?? 80;
+    const { data: gSetting } = await supabaseAdmin
+      .from("settings").select("value").eq("key", "ai_grading_enabled").maybeSingle();
+    if (gSetting && gSetting.value === "false") {
+      throw new Error("AI grading is disabled globally by the admin. Please grade submissions manually.");
+    }
+    const { data: postRow } = await supabaseAdmin
+      .from("posts").select("ai_grading_enabled,ai_grading_limit").eq("id", data.postId).maybeSingle();
+    if (postRow && (postRow as any).ai_grading_enabled === false) {
+      throw new Error("AI grading is turned off for this lesson. Grade submissions manually.");
+    }
+    const perCall = Math.min(data.limit ?? 80, (postRow as any)?.ai_grading_limit ?? 200);
     const { data: subs } = await supabaseAdmin
       .from("voice_submissions")
       .select("id,storage_path,mime_type")

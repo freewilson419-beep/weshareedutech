@@ -48,6 +48,7 @@ function Compose() {
   const [publishing, setPublishing] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isUnlisted, setIsUnlisted] = useState(false);
+  const [aiGrading, setAiGrading] = useState(true);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
     intro: [], body: [], conclusion: [], reflection: [], learn_to_teach: [],
@@ -71,6 +72,7 @@ function Compose() {
           });
           setIsAnonymous(!!data.is_anonymous);
           setIsUnlisted(!!data.is_unlisted);
+          setAiGrading((data as any).ai_grading_enabled !== false);
           if (data.is_unlisted && data.published_at) setPublishedSlug(data.slug);
           const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
           setMedia({
@@ -122,6 +124,7 @@ function Compose() {
       section_media: media,
       is_anonymous: isAnonymous,
       is_unlisted: isUnlisted,
+      ai_grading_enabled: aiGrading,
     };
   };
 
@@ -281,6 +284,20 @@ function Compose() {
             </div>
           </div>
         )}
+      </CardContent></Card>
+
+      <Card><CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="flex items-center gap-2 font-serif text-base">
+              ✨ AI grading for Learn-to-Teach voice notes
+            </Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              When ON, you can auto-grade student voice submissions with AI. When OFF, you grade them manually.
+            </p>
+          </div>
+          <Switch checked={aiGrading} onCheckedChange={setAiGrading} />
+        </div>
       </CardContent></Card>
 
       <AlertDialog open={showPublishAgreement} onOpenChange={setShowPublishAgreement}>

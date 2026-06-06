@@ -1,35 +1,68 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeHref } from "@/lib/safe-url";
+import { toast } from "sonner";
 
 interface Notif { id: string; title: string; body: string; link: string; is_read: boolean; created_at: string; }
 
 export function NotificationsBell() {
   const { user } = useAuth();
   const [items, setItems] = useState<Notif[]>([]);
+  const firstLoadRef = useRef(true);
+
+  // Ask for browser notification permission ONCE per session.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      // Defer slightly so it doesn't fire during hydration
+      const t = setTimeout(() => { Notification.requestPermission().catch(() => {}); }, 1500);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(20);
       setItems((data ?? []) as Notif[]);
+      firstLoadRef.current = false;
     };
     load();
+
+    const showAlert = (n: Notif) => {
+      // In-app toast (always works)
+      toast(n.title, { description: n.body || undefined });
+      // Browser notification (works when tab is in background too)
+      try {
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          const notif = new Notification(n.title, { body: n.body || "", tag: n.id, icon: "/favicon.ico" });
+          notif.onclick = () => { window.focus(); if (n.link) window.location.href = safeHref(n.link); };
+        }
+      } catch { /* ignore */ }
+    };
+
     const channel = supabase
       .channel("notif")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, load)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const n = payload.new as Notif;
+          setItems((prev) => [n, ...prev].slice(0, 20));
+          if (!firstLoadRef.current) showAlert(n);
+        },
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const unread = items.filter((n) => !n.is_read).length;
 
-  // When the user opens the bell, delete the notifications they're seeing
-  // (they've now "checked" them — no need to keep them stored).
+  // When the user opens the bell, delete the notifications they've checked.
   const clearOnOpen = async () => {
     if (items.length === 0) return;
     const ids = items.map((n) => n.id);

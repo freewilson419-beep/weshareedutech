@@ -98,6 +98,7 @@ function AdminAnnouncements() {
   const qc = useQueryClient();
   const [form, setForm] = useState<FormState>(empty);
   const [sending, setSending] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
   const [editing, setEditing] = useState<(FormState & { id: string }) | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
@@ -112,8 +113,9 @@ function AdminAnnouncements() {
         imageUrl: form.imageUrl || undefined,
         ctaLabel: form.ctaLabel || undefined,
         ctaUrl: form.ctaUrl || undefined,
+        sendEmail,
       } });
-      toast.success(`Sent to ${r.recipients} users · ${r.emailsQueued} email(s) queued`);
+      toast.success(`Sent to ${r.recipients} users${sendEmail ? ` · ${r.emailsQueued} email(s) queued` : " (in-app only)"}`);
       setForm(empty);
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
     } catch (e: any) { toast.error(e.message); }
@@ -149,9 +151,13 @@ function AdminAnnouncements() {
             <h3 className="font-medium">Broadcast to All Users</h3>
           </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Mail className="h-3 w-3" /> Sends a branded email AND posts to each user's notification bar.
+            <Mail className="h-3 w-3" /> Posts to every user's notification bell (browser alert). Email is optional.
           </p>
           <AnnouncementForm userId={user.id} value={form} onChange={setForm} />
+          <label className="flex items-center gap-2 rounded-md border bg-muted/30 p-2 text-sm">
+            <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
+            Also send as email (slower, uses email quota)
+          </label>
           <Button onClick={send} disabled={sending}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send to Everyone
