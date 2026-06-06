@@ -72,6 +72,7 @@ function Compose() {
           });
           setIsAnonymous(!!data.is_anonymous);
           setIsUnlisted(!!data.is_unlisted);
+          setAiGrading((data as any).ai_grading_enabled !== false);
           if (data.is_unlisted && data.published_at) setPublishedSlug(data.slug);
           const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
           setMedia({
