@@ -98,6 +98,7 @@ function AdminAnnouncements() {
   const qc = useQueryClient();
   const [form, setForm] = useState<FormState>(empty);
   const [sending, setSending] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
   const [editing, setEditing] = useState<(FormState & { id: string }) | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
@@ -112,8 +113,9 @@ function AdminAnnouncements() {
         imageUrl: form.imageUrl || undefined,
         ctaLabel: form.ctaLabel || undefined,
         ctaUrl: form.ctaUrl || undefined,
+        sendEmail,
       } });
-      toast.success(`Sent to ${r.recipients} users · ${r.emailsQueued} email(s) queued`);
+      toast.success(`Sent to ${r.recipients} users${sendEmail ? ` · ${r.emailsQueued} email(s) queued` : " (in-app only)"}`);
       setForm(empty);
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
     } catch (e: any) { toast.error(e.message); }
