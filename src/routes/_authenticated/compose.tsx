@@ -286,6 +286,20 @@ function Compose() {
         )}
       </CardContent></Card>
 
+      <Card><CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="flex items-center gap-2 font-serif text-base">
+              ✨ AI grading for Learn-to-Teach voice notes
+            </Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              When ON, you can auto-grade student voice submissions with AI. When OFF, you grade them manually.
+            </p>
+          </div>
+          <Switch checked={aiGrading} onCheckedChange={setAiGrading} />
+        </div>
+      </CardContent></Card>
+
       <AlertDialog open={showPublishAgreement} onOpenChange={setShowPublishAgreement}>
         <AlertDialogContent>
           <AlertDialogHeader>
