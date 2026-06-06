@@ -27,6 +27,8 @@ function AdminSettings() {
   const [contact, setContact] = useState("");
   const [defaultAnon, setDefaultAnon] = useState(false);
   const [tags, setTags] = useState("");
+  const [aiOn, setAiOn] = useState(true);
+  const [emailDefault, setEmailDefault] = useState(true);
 
   useEffect(() => {
     if (!data) return;
@@ -35,6 +37,8 @@ function AdminSettings() {
     setContact(data.contact_email ?? "");
     setDefaultAnon(data.default_anonymous_global === "true");
     setTags(data.featured_tags ?? "");
+    setAiOn((data.ai_grading_enabled ?? "true") === "true");
+    setEmailDefault((data.announcement_send_email_default ?? "true") === "true");
   }, [data]);
 
   const persist = async (key: string, value: string) => {
