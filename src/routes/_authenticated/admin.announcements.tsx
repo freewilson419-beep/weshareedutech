@@ -151,9 +151,13 @@ function AdminAnnouncements() {
             <h3 className="font-medium">Broadcast to All Users</h3>
           </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Mail className="h-3 w-3" /> Sends a branded email AND posts to each user's notification bar.
+            <Mail className="h-3 w-3" /> Posts to every user's notification bell (browser alert). Email is optional.
           </p>
           <AnnouncementForm userId={user.id} value={form} onChange={setForm} />
+          <label className="flex items-center gap-2 rounded-md border bg-muted/30 p-2 text-sm">
+            <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
+            Also send as email (slower, uses email quota)
+          </label>
           <Button onClick={send} disabled={sending}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send to Everyone
