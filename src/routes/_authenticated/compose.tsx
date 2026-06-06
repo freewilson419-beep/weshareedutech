@@ -124,6 +124,7 @@ function Compose() {
       section_media: media,
       is_anonymous: isAnonymous,
       is_unlisted: isUnlisted,
+      ai_grading_enabled: aiGrading,
     };
   };
 
