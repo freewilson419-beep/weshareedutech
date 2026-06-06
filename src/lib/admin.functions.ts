@@ -256,6 +256,17 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
         await supabaseAdmin.from("notifications").insert(notifRows.slice(i, i + 500));
       }
     }
+    // Determine whether to send email: explicit param wins; otherwise honor global setting.
+    let shouldEmail = data.sendEmail;
+    if (shouldEmail === undefined) {
+      const { data: s } = await supabaseAdmin
+        .from("settings").select("value").eq("key", "announcement_send_email_default").maybeSingle();
+      shouldEmail = (s?.value ?? "true") === "true";
+    }
+    if (!shouldEmail) {
+      return { id: ann.id, recipients: notifRows.length, emailsQueued: 0 };
+    }
+
 
     // Pre-render the email ONCE (per-user fields like recipientName are interpolated in template,
     // but we render with a generic name to keep enqueue O(1) per user instead of O(N) renders).
