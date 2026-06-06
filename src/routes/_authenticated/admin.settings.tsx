@@ -112,6 +112,30 @@ function AdminSettings() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="flex items-center gap-2 font-medium"><Sparkles className="h-4 w-4 text-primary" /> AI Grading (Global)</h3>
+              <p className="text-sm text-muted-foreground">When OFF, publishers can't run AI grading on any lesson — they must grade voice submissions manually. Per-lesson toggles still apply.</p>
+            </div>
+            <Switch checked={aiOn} onCheckedChange={(v) => { setAiOn(v); persist("ai_grading_enabled", v ? "true" : "false"); }} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="flex items-center gap-2 font-medium"><Bell className="h-4 w-4 text-primary" /> Email Announcements by Default</h3>
+              <p className="text-sm text-muted-foreground">When ON, broadcasts also send email by default. When OFF, broadcasts are in-app/browser-alert only unless you tick "also send email".</p>
+            </div>
+            <Switch checked={emailDefault} onCheckedChange={(v) => { setEmailDefault(v); persist("announcement_send_email_default", v ? "true" : "false"); }} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
