@@ -210,6 +210,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       ctaLabel: z.string().min(1).max(40).optional(),
       ctaUrl: z.string().max(500).regex(/^(https?:\/\/|\/)/i, "CTA URL must be http(s) or start with /").optional(),
       targetUserIds: z.array(z.string().uuid()).max(10000).optional(),
+      sendEmail: z.boolean().optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
