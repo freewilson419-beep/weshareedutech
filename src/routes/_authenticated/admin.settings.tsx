@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Wrench, Mail, Tag, EyeOff } from "lucide-react";
+import { Loader2, Save, Wrench, Mail, Tag, EyeOff, Sparkles, Bell } from "lucide-react";
 import { adminGetSettings, adminSaveSetting } from "@/lib/admin.functions";
 import { toast } from "sonner";
 
