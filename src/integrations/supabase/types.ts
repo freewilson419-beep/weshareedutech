@@ -435,6 +435,8 @@ export type Database = {
       }
       posts: {
         Row: {
+          ai_grading_enabled: boolean
+          ai_grading_limit: number | null
           author_user_id: string
           body_slide: string
           conclusion_slide: string
@@ -462,6 +464,8 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          ai_grading_enabled?: boolean
+          ai_grading_limit?: number | null
           author_user_id: string
           body_slide?: string
           conclusion_slide?: string
@@ -489,6 +493,8 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          ai_grading_enabled?: boolean
+          ai_grading_limit?: number | null
           author_user_id?: string
           body_slide?: string
           conclusion_slide?: string
