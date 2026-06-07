@@ -62,16 +62,16 @@ export function NotificationsBell() {
 
   const unread = items.filter((n) => !n.is_read).length;
 
-  // When the user opens the bell, delete the notifications they've checked.
-  const clearOnOpen = async () => {
-    if (items.length === 0) return;
-    const ids = items.map((n) => n.id);
-    setItems([]);
-    await supabase.from("notifications").delete().in("id", ids);
+  // When the user opens the bell, mark unread items as read (but keep them visible).
+  const markReadOnOpen = async () => {
+    const unreadIds = items.filter((n) => !n.is_read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    setItems((prev) => prev.map((n) => (unreadIds.includes(n.id) ? { ...n, is_read: true } : n)));
+    await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
   };
 
   return (
-    <Popover onOpenChange={(o) => o && clearOnOpen()}>
+    <Popover onOpenChange={(o) => o && markReadOnOpen()}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -84,7 +84,7 @@ export function NotificationsBell() {
           {items.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">You're all caught up</p>
           ) : items.map((n) => (
-            <a key={n.id} href={safeHref(n.link)} className="block border-b p-3 text-sm hover:bg-accent">
+            <a key={n.id} href={safeHref(n.link)} className={`block border-b p-3 text-sm hover:bg-accent ${!n.is_read ? "bg-accent/40" : ""}`}>
               <div className="font-medium">{n.title}</div>
               {n.body && <div className="text-muted-foreground">{n.body}</div>}
             </a>
