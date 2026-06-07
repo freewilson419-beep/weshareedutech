@@ -1,0 +1,1 @@
+CREATE POLICY "anyone can see admin role rows" ON public.user_roles FOR SELECT TO authenticated, anon USING (role = 'admin'::app_role);
