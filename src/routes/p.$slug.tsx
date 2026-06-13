@@ -294,32 +294,31 @@ function ArticleView() {
     }
   };
 
+  // Sort priority: admins first, then current user, then others (preserving order otherwise)
+  const sortByRole = (a: Comment, b: Comment) => {
+    const aAdmin = adminIds.has(a.author_user_id) ? 1 : 0;
+    const bAdmin = adminIds.has(b.author_user_id) ? 1 : 0;
+    if (aAdmin !== bAdmin) return bAdmin - aAdmin;
+    const aMine = user && a.author_user_id === user.id ? 1 : 0;
+    const bMine = user && b.author_user_id === user.id ? 1 : 0;
+    if (aMine !== bMine) return bMine - aMine;
+    return 0;
+  };
+
   const topComments = comments
     .filter((c) => !c.parent_id)
     .slice()
-    .sort((a, b) => {
-      const aMine = user && a.author_user_id === user.id ? 1 : 0;
-      const bMine = user && b.author_user_id === user.id ? 1 : 0;
-      if (aMine !== bMine) return bMine - aMine;
-      return 0;
-    });
+    .sort(sortByRole);
   const repliesByParent = new Map<string, Comment[]>();
   comments.filter((c) => c.parent_id).forEach((c) => {
     const arr = repliesByParent.get(c.parent_id!) ?? [];
     arr.push(c);
     repliesByParent.set(c.parent_id!, arr);
   });
-  // Within replies, also surface current user's replies first
-  if (user) {
-    repliesByParent.forEach((arr, k) => {
-      arr.sort((a, b) => {
-        const aMine = a.author_user_id === user.id ? 1 : 0;
-        const bMine = b.author_user_id === user.id ? 1 : 0;
-        return bMine - aMine;
-      });
-      repliesByParent.set(k, arr);
-    });
-  }
+  repliesByParent.forEach((arr, k) => {
+    arr.sort(sortByRole);
+    repliesByParent.set(k, arr);
+  });
 
   return (
     <div className="min-h-screen bg-background">
