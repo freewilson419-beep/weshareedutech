@@ -379,9 +379,11 @@ function ArticleView() {
             body={post.reflection}
             media={post.section_media?.reflection}
             intro={
-              <p className="mt-2 text-sm italic text-muted-foreground">
-                Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?
-              </p>
+              post.reflection?.trim() ? (
+                <p className="mt-1 text-xs italic text-muted-foreground">
+                  Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?
+                </p>
+              ) : null
             }
           >
             {post.reflection_form_url && (
@@ -398,9 +400,11 @@ function ArticleView() {
             body={post.learn_to_teach}
             media={post.section_media?.learn_to_teach}
             intro={
-              <p className="mt-2 text-sm italic text-muted-foreground">
-                Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?
-              </p>
+              post.learn_to_teach?.trim() ? (
+                <p className="mt-1 text-xs italic text-muted-foreground">
+                  Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?
+                </p>
+              ) : null
             }
           />
           <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} /></div>
