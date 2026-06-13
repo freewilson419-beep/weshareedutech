@@ -294,13 +294,32 @@ function ArticleView() {
     }
   };
 
-  const topComments = comments.filter((c) => !c.parent_id);
+  const topComments = comments
+    .filter((c) => !c.parent_id)
+    .slice()
+    .sort((a, b) => {
+      const aMine = user && a.author_user_id === user.id ? 1 : 0;
+      const bMine = user && b.author_user_id === user.id ? 1 : 0;
+      if (aMine !== bMine) return bMine - aMine;
+      return 0;
+    });
   const repliesByParent = new Map<string, Comment[]>();
   comments.filter((c) => c.parent_id).forEach((c) => {
     const arr = repliesByParent.get(c.parent_id!) ?? [];
     arr.push(c);
     repliesByParent.set(c.parent_id!, arr);
   });
+  // Within replies, also surface current user's replies first
+  if (user) {
+    repliesByParent.forEach((arr, k) => {
+      arr.sort((a, b) => {
+        const aMine = a.author_user_id === user.id ? 1 : 0;
+        const bMine = b.author_user_id === user.id ? 1 : 0;
+        return bMine - aMine;
+      });
+      repliesByParent.set(k, arr);
+    });
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -356,6 +375,9 @@ function ArticleView() {
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
           <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection}>
+            <p className="mt-3 text-sm italic text-muted-foreground">
+              (Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?)
+            </p>
             {post.reflection_form_url && (
               <div className="mt-4">
                 <a href={safeHref(post.reflection_form_url)} target="_blank" rel="noreferrer">
@@ -364,7 +386,11 @@ function ArticleView() {
               </div>
             )}
           </Section>
-          <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach} />
+          <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach}>
+            <p className="mt-3 text-sm italic text-muted-foreground">
+              (Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?)
+            </p>
+          </Section>
           <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} /></div>
         </div>
 

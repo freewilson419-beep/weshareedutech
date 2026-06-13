@@ -20,6 +20,8 @@ export function SiteFooter() {
               <li><Link to="/about-platform" className="hover:text-foreground">About this Platform</Link></li>
               <li><Link to="/login" className="hover:text-foreground">Sign In</Link></li>
               <li><Link to="/signup" className="hover:text-foreground">Create account</Link></li>
+              <li><a href="/p/learn-to-teach-insight-benefits-and-personal-rewards-c3zio" className="hover:text-foreground">Know more about Learn to Teach</a></li>
+              <li><a href="/p/insight-into-reflection-after-learning-personal-and-societal-dcz96" className="hover:text-foreground">Gain Insight into Reflection</a></li>
             </ul>
           </div>
           <div>
