@@ -373,7 +373,17 @@ function ArticleView() {
           <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
-          <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection}>
+          <Section
+            id="reflection"
+            label="Reflection"
+            body={post.reflection}
+            media={post.section_media?.reflection}
+            intro={
+              <p className="mt-2 text-sm italic text-muted-foreground">
+                Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?
+              </p>
+            }
+          >
             {post.reflection_form_url && (
               <div className="mt-4">
                 <a href={safeHref(post.reflection_form_url)} target="_blank" rel="noreferrer">
@@ -381,15 +391,18 @@ function ArticleView() {
                 </a>
               </div>
             )}
-            <p className="mt-4 text-sm italic text-muted-foreground">
-              Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?
-            </p>
           </Section>
-          <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach}>
-            <p className="mt-4 text-sm italic text-muted-foreground">
-              Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?
-            </p>
-          </Section>
+          <Section
+            id="learn-to-teach"
+            label="Learn to teach"
+            body={post.learn_to_teach}
+            media={post.section_media?.learn_to_teach}
+            intro={
+              <p className="mt-2 text-sm italic text-muted-foreground">
+                Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?
+              </p>
+            }
+          />
           <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} /></div>
         </div>
 
@@ -567,13 +580,14 @@ function CommentItem({
   );
 }
 
-function Section({ id, label, body, media, children }: { id?: string; label: string; body: string; media?: MediaItem[]; children?: React.ReactNode }) {
+function Section({ id, label, body, media, intro, children }: { id?: string; label: string; body: string; media?: MediaItem[]; intro?: React.ReactNode; children?: React.ReactNode }) {
   const hasBody = !!body?.trim();
   const hasMedia = !!media?.length;
-  if (!hasBody && !hasMedia && !children) return null;
+  if (!hasBody && !hasMedia && !children && !intro) return null;
   return (
     <section id={id} className={id ? "scroll-mt-20" : undefined}>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
+      {intro}
       {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
       {hasMedia && <MediaRender items={media!} />}
       {children}
