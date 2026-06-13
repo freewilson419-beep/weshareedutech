@@ -374,9 +374,6 @@ function ArticleView() {
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
           <Section id="reflection" label="Reflection" body={post.reflection} media={post.section_media?.reflection}>
-            <p className="mt-3 text-sm italic text-muted-foreground">
-              (Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?)
-            </p>
             {post.reflection_form_url && (
               <div className="mt-4">
                 <a href={safeHref(post.reflection_form_url)} target="_blank" rel="noreferrer">
@@ -384,10 +381,13 @@ function ArticleView() {
                 </a>
               </div>
             )}
+            <p className="mt-4 text-sm italic text-muted-foreground">
+              Would you like to take a moment to reflect on what you have just read in order to benefit both you and society?
+            </p>
           </Section>
           <Section id="learn-to-teach" label="Learn to teach" body={post.learn_to_teach} media={post.section_media?.learn_to_teach}>
-            <p className="mt-3 text-sm italic text-muted-foreground">
-              (Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?)
+            <p className="mt-4 text-sm italic text-muted-foreground">
+              Would you like this knowledge to strengthen your understanding, help others grow, and contribute positively to society, making it a lasting asset to both you and your community?
             </p>
           </Section>
           <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} /></div>
