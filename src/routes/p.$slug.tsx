@@ -567,13 +567,14 @@ function CommentItem({
   );
 }
 
-function Section({ id, label, body, media, children }: { id?: string; label: string; body: string; media?: MediaItem[]; children?: React.ReactNode }) {
+function Section({ id, label, body, media, intro, children }: { id?: string; label: string; body: string; media?: MediaItem[]; intro?: React.ReactNode; children?: React.ReactNode }) {
   const hasBody = !!body?.trim();
   const hasMedia = !!media?.length;
-  if (!hasBody && !hasMedia && !children) return null;
+  if (!hasBody && !hasMedia && !children && !intro) return null;
   return (
     <section id={id} className={id ? "scroll-mt-20" : undefined}>
       <h2 className="font-serif text-2xl text-primary">{label}</h2>
+      {intro}
       {hasBody && <div className="mt-3 whitespace-pre-wrap">{body}</div>}
       {hasMedia && <MediaRender items={media!} />}
       {children}
