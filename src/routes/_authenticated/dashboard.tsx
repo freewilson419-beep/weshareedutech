@@ -170,24 +170,10 @@ function Dashboard() {
 
       setFeed(await decorate(latest));
 
-      // Trending — last 7 days (lift the 1k cap by paging through view rows)
+      // Trending — last 7 days (single server-side aggregation via RPC)
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const tally = new Map<string, number>();
-      const PAGE = 1000;
-      for (let from = 0; from < 50000; from += PAGE) {
-        const { data: rows, error } = await supabase
-          .from("lesson_views")
-          .select("post_id")
-          .gte("created_at", since)
-          .range(from, from + PAGE - 1);
-        if (error || !rows || rows.length === 0) break;
-        rows.forEach((v) => tally.set(v.post_id, (tally.get(v.post_id) ?? 0) + 1));
-        if (rows.length < PAGE) break;
-      }
-      const topIds = Array.from(tally.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 4)
-        .map(([id]) => id);
+      const { data: trendingRows } = await supabase.rpc("trending_post_ids", { _since: since, _limit: 4 });
+      const topIds = (trendingRows ?? []).map((r: any) => r.post_id as string);
       if (topIds.length) {
         const { data: tRows } = await supabase
           .from("posts")

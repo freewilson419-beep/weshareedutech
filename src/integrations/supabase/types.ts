@@ -868,6 +868,13 @@ export type Database = {
           read_ct: number
         }[]
       }
+      trending_post_ids: {
+        Args: { _limit?: number; _since: string }
+        Returns: {
+          post_id: string
+          views: number
+        }[]
+      }
     }
     Enums: {
       app_role: "student" | "lecturer" | "admin" | "participant"
