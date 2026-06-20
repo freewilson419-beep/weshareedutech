@@ -39,7 +39,7 @@ interface FeedItem {
   quiz_url: string | null;
   view_count?: number;
   like_count?: number;
-  author?: { username: string; title: string; surname: string };
+  author?: { username: string; title: string; surname: string; avatar_url: string | null };
 }
 
 export const Route = createFileRoute("/")({
