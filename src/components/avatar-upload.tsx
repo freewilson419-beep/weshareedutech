@@ -26,9 +26,11 @@ export function AvatarUpload({
     if (!file.type.startsWith("image/")) return toast.error("Image only");
     if (file.size > 5 * 1024 * 1024) return toast.error("Max 5MB");
     setBusy(true);
-    const ext = file.name.split(".").pop() || "jpg";
+    const { compressImage } = await import("@/lib/compress-image");
+    const compressed = await compressImage(file, { maxEdge: 512, quality: 0.85 });
+    const ext = compressed.name.split(".").pop() || "webp";
     const path = `avatars/${userId}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("post-media").upload(path, file, { contentType: file.type, upsert: true });
+    const { error } = await supabase.storage.from("post-media").upload(path, compressed, { contentType: compressed.type, upsert: true });
     if (error) {
       setBusy(false);
       return toast.error(error.message);
