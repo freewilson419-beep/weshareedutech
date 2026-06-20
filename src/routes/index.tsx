@@ -235,7 +235,7 @@ function ArticleCard({ item }: { item: FeedItem }) {
     const url = typeof window !== "undefined" ? `${window.location.origin}${lessonUrl}` : lessonUrl;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: item.title, text: item.excerpt || item.title, url });
+        await navigator.share({ title: item.title, text: item.title, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied");
@@ -245,47 +245,45 @@ function ArticleCard({ item }: { item: FeedItem }) {
     }
   };
 
+  const gradient = gradientFor(item.id);
+
   return (
-    <article className="flex h-full flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl bg-card transition hover:-translate-y-0.5">
       <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
-        <div className="mb-2 flex flex-wrap gap-1">
-          {item.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>)}
+        <div className={`relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br ${gradient}`}>
+          {item.cover_image_url ? (
+            <img
+              src={item.cover_image_url}
+              alt={item.title}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-4 text-center">
+              <span className="line-clamp-3 text-lg font-extrabold uppercase tracking-wide text-white drop-shadow-lg sm:text-xl">
+                {item.title}
+              </span>
+            </div>
+          )}
         </div>
-        <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-primary">{item.title}</h3>
-        {item.excerpt && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.excerpt}</p>}
-        <Meta item={item} className="mt-2" />
+        <h3 className="mt-3 line-clamp-2 px-1 text-[15px] font-bold leading-snug group-hover:text-primary">
+          {item.title}
+        </h3>
+        <Meta item={item} className="mt-1 px-1" />
       </Link>
 
-      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3 text-xs">
+      <div className="mt-2 flex items-center gap-4 px-1 pt-2 text-xs">
         <Link to="/p/$slug" params={{ slug: item.slug }} hash="comments" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
           <MessageCircle className="h-3.5 w-3.5" /> Comment
         </Link>
         <button type="button" onClick={onShare} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
           <Share2 className="h-3.5 w-3.5" /> Share
         </button>
-        <Link to="/p/$slug" params={{ slug: item.slug }} hash="reflection" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-          <Lightbulb className="h-3.5 w-3.5" /> Reflect
-        </Link>
-        {item.learn_to_teach?.trim() && (
-          <Link to="/p/$slug" params={{ slug: item.slug }} hash="learn-to-teach" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-            <GraduationCap className="h-3.5 w-3.5" /> Learn to Teach
-          </Link>
-        )}
-        {item.quiz_url && (
-          <Link
-            to="/p/$slug"
-            params={{ slug: item.slug }}
-            hash="external-quiz"
-            className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
-            title="Submit your Learn-to-Teach voice note first to unlock the exam"
-          >
-            <FileCheck className="h-3.5 w-3.5" /> Take Exam
-          </Link>
-        )}
       </div>
     </article>
   );
 }
+
 
 function Meta({ item, className }: { item: FeedItem; className?: string }) {
   const author = item.author;
