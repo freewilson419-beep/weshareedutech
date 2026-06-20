@@ -97,9 +97,11 @@ function Compose() {
     if (!file.type.startsWith("image/")) return toast.error("Pick an image file");
     if (file.size > 10 * 1024 * 1024) return toast.error("Max 10MB");
     setCoverUploading(true);
-    const ext = file.name.split(".").pop() || "jpg";
+    const { compressImage } = await import("@/lib/compress-image");
+    const compressed = await compressImage(file, { maxEdge: 1600, quality: 0.82 });
+    const ext = compressed.name.split(".").pop() || "webp";
     const path = `${user.id}/cover-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("post-media").upload(path, file, { contentType: file.type });
+    const { error } = await supabase.storage.from("post-media").upload(path, compressed, { contentType: compressed.type });
     if (error) { setCoverUploading(false); return toast.error(error.message); }
     const { data } = supabase.storage.from("post-media").getPublicUrl(path);
     setForm((f) => ({ ...f, cover_image_url: data.publicUrl }));
