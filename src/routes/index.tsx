@@ -6,8 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Eye, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Lightbulb, GraduationCap, FileCheck } from "lucide-react";
+import { ArrowRight, Bookmark, Eye, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Search } from "lucide-react";
 import { toast } from "sonner";
+
+const GRADIENTS = [
+  "from-fuchsia-500 via-pink-500 to-orange-400",
+  "from-indigo-500 via-purple-500 to-pink-500",
+  "from-emerald-400 via-teal-500 to-cyan-500",
+  "from-amber-400 via-orange-500 to-rose-500",
+  "from-sky-400 via-blue-500 to-indigo-600",
+  "from-lime-400 via-green-500 to-emerald-600",
+  "from-rose-400 via-red-500 to-purple-600",
+  "from-yellow-300 via-amber-500 to-orange-600",
+];
+function gradientFor(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return GRADIENTS[hash % GRADIENTS.length];
+}
 
 interface FeedItem {
   id: string;
