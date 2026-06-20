@@ -128,10 +128,10 @@ function PublicationHome() {
       <main>
         <section className="px-4 pb-4 pt-2 sm:px-8 sm:pb-6 sm:pt-4">
           <div className="container mx-auto max-w-5xl text-center">
-            <h1 className="mb-2 text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
+            <h1 className="mb-2 text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
               Learn by <span className="text-primary">sharing</span>. Read what others publish.
             </h1>
-            <p className="mx-auto mb-4 max-w-2xl text-xs leading-snug text-muted-foreground sm:text-sm">
+            <p className="mx-auto mb-4 max-w-2xl text-sm leading-snug text-muted-foreground sm:text-base">
               A digital learning publication. Sign in to publish, comment, like, or bookmark.
             </p>
 
