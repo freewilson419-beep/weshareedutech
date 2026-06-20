@@ -6,8 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Eye, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Lightbulb, GraduationCap, FileCheck } from "lucide-react";
+import { ArrowRight, Bookmark, Eye, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Search } from "lucide-react";
 import { toast } from "sonner";
+
+const GRADIENTS = [
+  "from-fuchsia-500 via-pink-500 to-orange-400",
+  "from-indigo-500 via-purple-500 to-pink-500",
+  "from-emerald-400 via-teal-500 to-cyan-500",
+  "from-amber-400 via-orange-500 to-rose-500",
+  "from-sky-400 via-blue-500 to-indigo-600",
+  "from-lime-400 via-green-500 to-emerald-600",
+  "from-rose-400 via-red-500 to-purple-600",
+  "from-yellow-300 via-amber-500 to-orange-600",
+];
+function gradientFor(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return GRADIENTS[hash % GRADIENTS.length];
+}
 
 interface FeedItem {
   id: string;
@@ -47,15 +63,15 @@ function PublicationHome() {
   const navigate = useNavigate();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (authLoading || !session) return;
-    // Allow signed-in users to browse the landing page when they explicitly opt in
-    // (e.g. clicking the sidebar logo from the dashboard adds ?stay=1).
     const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
     if (params?.get("stay") === "1") return;
     navigate({ to: "/dashboard", replace: true });
   }, [authLoading, session, navigate]);
+
 
   useEffect(() => {
     (async () => {
@@ -111,70 +127,58 @@ function PublicationHome() {
       </header>
 
       <main>
-        <section className="px-4 pb-10 pt-6 sm:px-8 sm:pb-16 sm:pt-10">
+        <section className="px-4 pb-4 pt-2 sm:px-8 sm:pb-6 sm:pt-4">
           <div className="container mx-auto max-w-5xl text-center">
-            <h1 className="mb-6 text-4xl font-extrabold leading-[1.1] tracking-normal text-foreground sm:text-5xl md:text-7xl">
-              Learn by <span className="text-primary">sharing</span>.<br />
-              Read what others publish.
+            <h1 className="mb-2 text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
+              Learn by <span className="text-primary">sharing</span>. Read what others publish.
             </h1>
-
-            <p className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-xl md:text-2xl">
-              WeShare EduTech is a digital learning publication where participants publish structured lessons for everyone to read freely. Sign in to publish, comment, like, or bookmark.
+            <p className="mx-auto mb-4 max-w-2xl text-xs leading-snug text-muted-foreground sm:text-sm">
+              A digital learning publication. Sign in to publish, comment, like, or bookmark.
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-              {session ? (
-                <Link to="/compose">
-                  <Button size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
-                    Publish a Lesson
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/signup">
-                  <Button size="lg" className="h-12 w-full px-8 font-medium shadow-lg shadow-primary/20 sm:h-14 sm:w-auto sm:text-lg">
-                    Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              )}
-              <a href="#publications" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
-                  Browse Lessons
-                </Button>
-              </a>
+            <div className="mx-auto max-w-2xl">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search lessons, topics, or tags…"
+                  className="h-12 w-full rounded-full border border-input bg-card pl-12 pr-4 text-sm shadow-sm outline-none ring-primary/20 transition focus:ring-4 sm:h-14 sm:text-base"
+                  aria-label="Search lessons"
+                />
+              </label>
             </div>
           </div>
         </section>
 
-        <section id="publications" className="border-t bg-muted/30 py-12 sm:py-16">
+        <section id="publications" className="border-t bg-muted/30 py-6 sm:py-10">
           <div className="container mx-auto px-4 sm:px-8">
-            <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="mb-1 text-sm font-medium text-primary">Published lessons</p>
-                <h2 className="text-2xl font-extrabold tracking-normal sm:text-3xl md:text-4xl">Read published lessons</h2>
-                <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                  Lessons from our community. Tap any title to read the full lesson.
-                </p>
-              </div>
-              {session && (
-                <Link to="/compose">
-                  <Button><PenLine className="h-4 w-4" /> Write a lesson</Button>
-                </Link>
-              )}
-            </div>
-
             {loading ? (
               <div className="flex justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" /></div>
             ) : items.length === 0 ? (
               <EmptyState signedIn={!!session} />
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {items.map((item) => <ArticleCard key={item.id} item={item} />)}
-              </div>
-            )}
+            ) : (() => {
+              const q = query.trim().toLowerCase();
+              const filtered = q
+                ? items.filter((it) =>
+                    it.title.toLowerCase().includes(q) ||
+                    (it.excerpt ?? "").toLowerCase().includes(q) ||
+                    it.tags.some((t) => t.toLowerCase().includes(q))
+                  )
+                : items;
+              if (filtered.length === 0) {
+                return <p className="py-16 text-center text-sm text-muted-foreground">No lessons match “{query}”.</p>;
+              }
+              return (
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filtered.map((item) => <ArticleCard key={item.id} item={item} />)}
+                </div>
+              );
+            })()}
           </div>
         </section>
+
 
         <section className="py-16 sm:py-24">
           <div className="container mx-auto max-w-6xl px-4 sm:px-8">
@@ -231,7 +235,7 @@ function ArticleCard({ item }: { item: FeedItem }) {
     const url = typeof window !== "undefined" ? `${window.location.origin}${lessonUrl}` : lessonUrl;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: item.title, text: item.excerpt || item.title, url });
+        await navigator.share({ title: item.title, text: item.title, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied");
@@ -241,47 +245,45 @@ function ArticleCard({ item }: { item: FeedItem }) {
     }
   };
 
+  const gradient = gradientFor(item.id);
+
   return (
-    <article className="flex h-full flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl bg-card transition hover:-translate-y-0.5">
       <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
-        <div className="mb-2 flex flex-wrap gap-1">
-          {item.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>)}
+        <div className={`relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br ${gradient}`}>
+          {item.cover_image_url ? (
+            <img
+              src={item.cover_image_url}
+              alt={item.title}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-4 text-center">
+              <span className="line-clamp-3 text-lg font-extrabold uppercase tracking-wide text-white drop-shadow-lg sm:text-xl">
+                {item.title}
+              </span>
+            </div>
+          )}
         </div>
-        <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-primary">{item.title}</h3>
-        {item.excerpt && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.excerpt}</p>}
-        <Meta item={item} className="mt-2" />
+        <h3 className="mt-3 line-clamp-2 px-1 text-[15px] font-bold leading-snug group-hover:text-primary">
+          {item.title}
+        </h3>
+        <Meta item={item} className="mt-1 px-1" />
       </Link>
 
-      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3 text-xs">
+      <div className="mt-2 flex items-center gap-4 px-1 pt-2 text-xs">
         <Link to="/p/$slug" params={{ slug: item.slug }} hash="comments" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
           <MessageCircle className="h-3.5 w-3.5" /> Comment
         </Link>
         <button type="button" onClick={onShare} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
           <Share2 className="h-3.5 w-3.5" /> Share
         </button>
-        <Link to="/p/$slug" params={{ slug: item.slug }} hash="reflection" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-          <Lightbulb className="h-3.5 w-3.5" /> Reflect
-        </Link>
-        {item.learn_to_teach?.trim() && (
-          <Link to="/p/$slug" params={{ slug: item.slug }} hash="learn-to-teach" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-            <GraduationCap className="h-3.5 w-3.5" /> Learn to Teach
-          </Link>
-        )}
-        {item.quiz_url && (
-          <Link
-            to="/p/$slug"
-            params={{ slug: item.slug }}
-            hash="external-quiz"
-            className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
-            title="Submit your Learn-to-Teach voice note first to unlock the exam"
-          >
-            <FileCheck className="h-3.5 w-3.5" /> Take Exam
-          </Link>
-        )}
       </div>
     </article>
   );
 }
+
 
 function Meta({ item, className }: { item: FeedItem; className?: string }) {
   const author = item.author;
