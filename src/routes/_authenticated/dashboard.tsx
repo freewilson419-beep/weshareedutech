@@ -296,22 +296,31 @@ function Dashboard() {
         ))}
       </div>
 
-      {/* Trending */}
-      {trending.length > 0 && (
-        <section className="space-y-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">
-              <TrendingUp className="mr-1 inline h-3 w-3" /> Trending this week
-            </p>
-            <h2 className="font-serif text-2xl md:text-3xl">What everyone's reading</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {trending.map((item) => (
-              <FeedCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Search */}
+      <section>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = (new FormData(e.currentTarget).get("q") as string)?.trim();
+            if (q) window.location.href = `/?stay=1&q=${encodeURIComponent(q)}`;
+            else window.location.href = `/?stay=1`;
+          }}
+          className="relative"
+        >
+          <input
+            name="q"
+            type="search"
+            placeholder="Search lessons, topics, authors…"
+            className="w-full rounded-full border bg-card py-3 pl-12 pr-4 text-sm shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <svg
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+          </svg>
+        </form>
+      </section>
 
       {/* For-you removed by request */}
 
