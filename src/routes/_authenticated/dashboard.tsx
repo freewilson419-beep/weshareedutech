@@ -149,7 +149,7 @@ function Dashboard() {
         .select("id,slug,title,excerpt,cover_image_url,tags,read_time_minutes,published_at,author_user_id,is_anonymous")
         .not("published_at", "is", null)
         .order("published_at", { ascending: false })
-        .limit(8);
+        .limit(3);
 
       const decorate = async (rows: typeof latest): Promise<Feed[]> => {
         if (!rows?.length) return [];
