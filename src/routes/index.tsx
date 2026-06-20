@@ -92,7 +92,7 @@ function PublicationHome() {
       const authorIds = Array.from(new Set(ordered.map((post) => post.author_user_id)));
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id,username,title,surname")
+        .select("user_id,username,title,surname,avatar_url")
         .in("user_id", authorIds);
       const byId = new Map(profiles?.map((profile) => [profile.user_id, profile]) ?? []);
 
