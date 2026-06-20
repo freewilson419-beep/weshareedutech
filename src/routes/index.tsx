@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { ArrowRight, Bookmark, Eye, PenLine, BookOpen, Sparkles, Heart, MessageCircle, Share2, Search } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowRight, Bookmark, PenLine, BookOpen, Sparkles, Heart, Search } from "lucide-react";
 
 const GRADIENTS = [
   "from-fuchsia-500 via-pink-500 to-orange-400",
