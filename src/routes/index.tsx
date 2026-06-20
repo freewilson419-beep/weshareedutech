@@ -127,70 +127,58 @@ function PublicationHome() {
       </header>
 
       <main>
-        <section className="px-4 pb-10 pt-6 sm:px-8 sm:pb-16 sm:pt-10">
+        <section className="px-4 pb-4 pt-2 sm:px-8 sm:pb-6 sm:pt-4">
           <div className="container mx-auto max-w-5xl text-center">
-            <h1 className="mb-6 text-4xl font-extrabold leading-[1.1] tracking-normal text-foreground sm:text-5xl md:text-7xl">
-              Learn by <span className="text-primary">sharing</span>.<br />
-              Read what others publish.
+            <h1 className="mb-2 text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
+              Learn by <span className="text-primary">sharing</span>. Read what others publish.
             </h1>
-
-            <p className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-xl md:text-2xl">
-              WeShare EduTech is a digital learning publication where participants publish structured lessons for everyone to read freely. Sign in to publish, comment, like, or bookmark.
+            <p className="mx-auto mb-4 max-w-2xl text-xs leading-snug text-muted-foreground sm:text-sm">
+              A digital learning publication. Sign in to publish, comment, like, or bookmark.
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-              {session ? (
-                <Link to="/compose">
-                  <Button size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
-                    Publish a Lesson
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/signup">
-                  <Button size="lg" className="h-12 w-full px-8 font-medium shadow-lg shadow-primary/20 sm:h-14 sm:w-auto sm:text-lg">
-                    Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              )}
-              <a href="#publications" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="h-12 w-full px-8 font-medium sm:h-14 sm:w-auto sm:text-lg">
-                  Browse Lessons
-                </Button>
-              </a>
+            <div className="mx-auto max-w-2xl">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search lessons, topics, or tags…"
+                  className="h-12 w-full rounded-full border border-input bg-card pl-12 pr-4 text-sm shadow-sm outline-none ring-primary/20 transition focus:ring-4 sm:h-14 sm:text-base"
+                  aria-label="Search lessons"
+                />
+              </label>
             </div>
           </div>
         </section>
 
-        <section id="publications" className="border-t bg-muted/30 py-12 sm:py-16">
+        <section id="publications" className="border-t bg-muted/30 py-6 sm:py-10">
           <div className="container mx-auto px-4 sm:px-8">
-            <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="mb-1 text-sm font-medium text-primary">Published lessons</p>
-                <h2 className="text-2xl font-extrabold tracking-normal sm:text-3xl md:text-4xl">Read published lessons</h2>
-                <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                  Lessons from our community. Tap any title to read the full lesson.
-                </p>
-              </div>
-              {session && (
-                <Link to="/compose">
-                  <Button><PenLine className="h-4 w-4" /> Write a lesson</Button>
-                </Link>
-              )}
-            </div>
-
             {loading ? (
               <div className="flex justify-center py-16"><div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" /></div>
             ) : items.length === 0 ? (
               <EmptyState signedIn={!!session} />
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {items.map((item) => <ArticleCard key={item.id} item={item} />)}
-              </div>
-            )}
+            ) : (() => {
+              const q = query.trim().toLowerCase();
+              const filtered = q
+                ? items.filter((it) =>
+                    it.title.toLowerCase().includes(q) ||
+                    (it.excerpt ?? "").toLowerCase().includes(q) ||
+                    it.tags.some((t) => t.toLowerCase().includes(q))
+                  )
+                : items;
+              if (filtered.length === 0) {
+                return <p className="py-16 text-center text-sm text-muted-foreground">No lessons match “{query}”.</p>;
+              }
+              return (
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filtered.map((item) => <ArticleCard key={item.id} item={item} />)}
+                </div>
+              );
+            })()}
           </div>
         </section>
+
 
         <section className="py-16 sm:py-24">
           <div className="container mx-auto max-w-6xl px-4 sm:px-8">
