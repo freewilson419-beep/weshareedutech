@@ -32,10 +32,12 @@ export function MyGrades() {
   const fetchFn = useServerFn(getMyGrades);
   const { data, isLoading } = useQuery<Grade[]>({ queryKey: ["my-grades"], queryFn: () => fetchFn() });
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   if (isLoading || !data || data.length === 0) return null;
   const open = data.find((g) => g.id === openId) || null;
   const avg = Math.round(data.reduce((s, g) => s + (g.total_score ?? 0), 0) / data.length);
+  const visible = showAll ? data : data.slice(0, 1);
 
   return (
     <section className="space-y-4">
@@ -52,7 +54,7 @@ export function MyGrades() {
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {data.slice(0, 6).map((g) => {
+        {visible.map((g) => {
           const t = tone(g.total_score ?? 0);
           return (
             <Card key={g.id} className="overflow-hidden">
@@ -78,6 +80,13 @@ export function MyGrades() {
           );
         })}
       </div>
+      {data.length > 1 && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? "Show less" : `View all (${data.length})`} <ArrowRight className="ml-1 h-3 w-3" />
+          </Button>
+        </div>
+      )}
 
       <Dialog open={!!open} onOpenChange={(v) => { if (!v) setOpenId(null); }}>
         <DialogContent className="max-w-lg">

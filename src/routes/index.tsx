@@ -247,6 +247,7 @@ function ArticleCard({ item }: { item: FeedItem }) {
               src={item.cover_image_url}
               alt={item.title}
               loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
@@ -260,7 +261,7 @@ function ArticleCard({ item }: { item: FeedItem }) {
         <div className="mt-3 flex gap-3 px-1">
           <div className="shrink-0">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={name} className="h-9 w-9 rounded-full object-cover" loading="lazy" />
+              <img src={avatarUrl} alt={name} className="h-9 w-9 rounded-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <div className="grid h-9 w-9 place-items-center rounded-full bg-muted text-xs font-bold text-foreground">
                 {initial}
