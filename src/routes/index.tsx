@@ -226,28 +226,18 @@ function PublicationHome() {
 }
 
 function ArticleCard({ item }: { item: FeedItem }) {
-  const lessonUrl = `/p/${item.slug}`;
-
-  const onShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const url = typeof window !== "undefined" ? `${window.location.origin}${lessonUrl}` : lessonUrl;
-    try {
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: item.title, text: item.title, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copied");
-      }
-    } catch {
-      /* user cancelled */
-    }
-  };
-
   const gradient = gradientFor(item.id);
+  const author = item.author;
+  const name = item.is_anonymous
+    ? "Anonymous"
+    : author ? (author.username || author.surname || "Anonymous") : "Anonymous";
+  const initial = name.charAt(0).toUpperCase();
+  const avatarUrl = item.is_anonymous ? null : author?.avatar_url ?? null;
+  const date = new Date(item.published_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const views = (item.view_count ?? 0).toLocaleString();
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl bg-card transition hover:-translate-y-0.5">
+    <article className="flex h-full flex-col">
       <Link to="/p/$slug" params={{ slug: item.slug }} className="group block">
         <div className={`relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br ${gradient}`}>
           {item.cover_image_url ? (
@@ -265,42 +255,27 @@ function ArticleCard({ item }: { item: FeedItem }) {
             </div>
           )}
         </div>
-        <h3 className="mt-3 line-clamp-2 px-1 text-[15px] font-bold leading-snug group-hover:text-primary">
-          {item.title}
-        </h3>
-        <Meta item={item} className="mt-1 px-1" />
+        <div className="mt-3 flex gap-3 px-1">
+          <div className="shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={name} className="h-9 w-9 rounded-full object-cover" loading="lazy" />
+            ) : (
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-muted text-xs font-bold text-foreground">
+                {initial}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground group-hover:text-primary">
+              {item.title}
+            </h3>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {name} · {views} views · {date}
+            </p>
+          </div>
+        </div>
       </Link>
-
-      <div className="mt-2 flex items-center gap-4 px-1 pt-2 text-xs">
-        <Link to="/p/$slug" params={{ slug: item.slug }} hash="comments" className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-          <MessageCircle className="h-3.5 w-3.5" /> Comment
-        </Link>
-        <button type="button" onClick={onShare} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-          <Share2 className="h-3.5 w-3.5" /> Share
-        </button>
-      </div>
     </article>
-  );
-}
-
-
-function Meta({ item, className }: { item: FeedItem; className?: string }) {
-  const author = item.author;
-  // Username-only (no titles)
-  const name = item.is_anonymous
-    ? "Anonymous"
-    : author ? (author.username || author.surname || "Anonymous") : "Anonymous";
-
-  return (
-    <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground ${className ?? ""}`}>
-      <span className="font-medium text-foreground">{name}</span>
-      <span>·</span>
-      <span>{new Date(item.published_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
-      <span>·</span>
-      <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {(item.view_count ?? 0).toLocaleString()}</span>
-      <span>·</span>
-      <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {(item.like_count ?? 0).toLocaleString()}</span>
-    </div>
   );
 }
 
