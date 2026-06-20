@@ -63,15 +63,15 @@ function PublicationHome() {
   const navigate = useNavigate();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (authLoading || !session) return;
-    // Allow signed-in users to browse the landing page when they explicitly opt in
-    // (e.g. clicking the sidebar logo from the dashboard adds ?stay=1).
     const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
     if (params?.get("stay") === "1") return;
     navigate({ to: "/dashboard", replace: true });
   }, [authLoading, session, navigate]);
+
 
   useEffect(() => {
     (async () => {
