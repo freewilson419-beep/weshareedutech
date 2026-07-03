@@ -591,8 +591,9 @@ function CommentItem({
   onLike: () => void;
   canReply: boolean;
   onReply?: () => void;
-  onEdit: (body: string) => void | Promise<void>;
-  onDelete: () => void | Promise<void>;
+  onEdit: (body: string) => unknown;
+  onDelete: () => unknown;
+
 }) {
   const name = displayName(c.author, false);
   const isOwner = !!currentUserId && c.author_user_id === currentUserId;
