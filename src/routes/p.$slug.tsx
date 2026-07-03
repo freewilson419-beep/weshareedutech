@@ -45,12 +45,14 @@ interface Comment {
   id: string;
   body: string;
   created_at: string;
+  edited_at?: string | null;
   author_user_id: string;
   parent_id?: string | null;
   author?: Author;
   likes: number;
   liked: boolean;
 }
+
 
 export const Route = createFileRoute("/p/$slug")({
   loader: async ({ params }) => {
