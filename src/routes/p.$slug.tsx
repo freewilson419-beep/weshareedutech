@@ -525,9 +525,13 @@ function ArticleView() {
                 <CommentItem
                   c={c}
                   isAdmin={adminIds.has(c.author_user_id)}
+                  currentUserId={user?.id ?? null}
+                  viewerIsAdmin={isAdmin}
                   onLike={() => toggleCommentLike(c)}
                   canReply={!!user}
                   onReply={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyBody(""); }}
+                  onEdit={(body) => editComment(c, body)}
+                  onDelete={() => deleteComment(c)}
                 />
                 {/* Replies */}
                 <ul className="mt-4 ml-8 space-y-4 border-l pl-4">
@@ -536,12 +540,17 @@ function ArticleView() {
                       <CommentItem
                         c={r}
                         isAdmin={adminIds.has(r.author_user_id)}
+                        currentUserId={user?.id ?? null}
+                        viewerIsAdmin={isAdmin}
                         onLike={() => toggleCommentLike(r)}
                         canReply={false}
+                        onEdit={(body) => editComment(r, body)}
+                        onDelete={() => deleteComment(r)}
                       />
                     </li>
                   ))}
                 </ul>
+
                 {replyTo === c.id && user && (
                   <div className="mt-3 ml-8 space-y-2 border-l pl-4">
                     <Textarea
