@@ -45,12 +45,14 @@ interface Comment {
   id: string;
   body: string;
   created_at: string;
+  edited_at?: string | null;
   author_user_id: string;
   parent_id?: string | null;
   author?: Author;
   likes: number;
   liked: boolean;
 }
+
 
 export const Route = createFileRoute("/p/$slug")({
   loader: async ({ params }) => {
@@ -157,7 +159,7 @@ function ArticleView() {
       const [{ data: a }, { data: clapRows }, { data: cmts }] = await Promise.all([
         supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").eq("user_id", post.author_user_id).maybeSingle(),
         supabase.from("claps").select("user_id").eq("post_id", post.id),
-        supabase.from("comments").select("id,body,created_at,author_user_id,parent_id").eq("post_id", post.id).order("created_at", { ascending: true }),
+        supabase.from("comments").select("id,body,created_at,edited_at,author_user_id,parent_id").eq("post_id", post.id).order("created_at", { ascending: true }),
       ]);
       setAuthor(a as Author | null);
       if (user) setLiked(!!(clapRows ?? []).find((r) => r.user_id === user.id));
@@ -271,7 +273,7 @@ function ArticleView() {
     const { data, error } = await supabase
       .from("comments")
       .insert({ post_id: post.id, author_user_id: user.id, body: t, parent_id: parentId })
-      .select("id,body,created_at,author_user_id,parent_id")
+      .select("id,body,created_at,edited_at,author_user_id,parent_id")
       .single();
     if (error) toast.error(error.message);
     else if (data) {
@@ -283,6 +285,34 @@ function ArticleView() {
     }
     setPosting(false);
   };
+
+  const isAdmin = !!user && adminIds.has(user.id);
+
+  const editComment = async (c: Comment, body: string) => {
+    if (!user) return;
+    const t = body.trim();
+    if (!t) return toast.error("Comment cannot be empty");
+    if (t.length > COMMENT_LIMIT) return toast.error(`Max ${COMMENT_LIMIT} characters`);
+    if (c.edited_at) return toast.error("Comments can only be edited once");
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("comments")
+      .update({ body: t, edited_at: now } as any)
+      .eq("id", c.id);
+    if (error) return toast.error(error.message);
+    setComments((cs) => cs.map((x) => x.id === c.id ? { ...x, body: t, edited_at: now } : x));
+    toast.success("Comment updated");
+  };
+
+  const deleteComment = async (c: Comment) => {
+    if (!user) return;
+    if (!confirm("Delete this comment? This cannot be undone.")) return;
+    const { error } = await supabase.from("comments").delete().eq("id", c.id);
+    if (error) return toast.error(error.message);
+    setComments((cs) => cs.filter((x) => x.id !== c.id && x.parent_id !== c.id));
+    toast.success("Comment deleted");
+  };
+
 
   const toggleCommentLike = async (c: Comment) => {
     if (!user) return toast.error("Sign in to like");
@@ -495,9 +525,13 @@ function ArticleView() {
                 <CommentItem
                   c={c}
                   isAdmin={adminIds.has(c.author_user_id)}
+                  currentUserId={user?.id ?? null}
+                  viewerIsAdmin={isAdmin}
                   onLike={() => toggleCommentLike(c)}
                   canReply={!!user}
                   onReply={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyBody(""); }}
+                  onEdit={(body) => editComment(c, body)}
+                  onDelete={() => deleteComment(c)}
                 />
                 {/* Replies */}
                 <ul className="mt-4 ml-8 space-y-4 border-l pl-4">
@@ -506,12 +540,17 @@ function ArticleView() {
                       <CommentItem
                         c={r}
                         isAdmin={adminIds.has(r.author_user_id)}
+                        currentUserId={user?.id ?? null}
+                        viewerIsAdmin={isAdmin}
                         onLike={() => toggleCommentLike(r)}
                         canReply={false}
+                        onEdit={(body) => editComment(r, body)}
+                        onDelete={() => deleteComment(r)}
                       />
                     </li>
                   ))}
                 </ul>
+
                 {replyTo === c.id && user && (
                   <div className="mt-3 ml-8 space-y-2 border-l pl-4">
                     <Textarea
@@ -543,15 +582,25 @@ function ArticleView() {
 }
 
 function CommentItem({
-  c, isAdmin, onLike, canReply, onReply,
+  c, isAdmin, currentUserId, viewerIsAdmin, onLike, canReply, onReply, onEdit, onDelete,
 }: {
   c: Comment;
   isAdmin: boolean;
+  currentUserId: string | null;
+  viewerIsAdmin: boolean;
   onLike: () => void;
   canReply: boolean;
   onReply?: () => void;
+  onEdit: (body: string) => unknown;
+  onDelete: () => unknown;
+
 }) {
   const name = displayName(c.author, false);
+  const isOwner = !!currentUserId && c.author_user_id === currentUserId;
+  const canEdit = isOwner && !c.edited_at;
+  const canDelete = isOwner || viewerIsAdmin;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(c.body);
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -566,23 +615,57 @@ function CommentItem({
             </p>
           )}
           <p className="text-sm font-medium">{name}</p>
-          <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(c.created_at).toLocaleString()}
+            {c.edited_at && <span className="ml-1 italic">(edited)</span>}
+          </p>
         </div>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
-      <div className="mt-2 flex items-center gap-3 text-xs">
-        <button onClick={onLike} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? "text-primary" : "text-muted-foreground"}`}>
-          <Heart className={`h-3.5 w-3.5 ${c.liked ? "fill-current" : ""}`} /> {c.likes > 0 ? c.likes : "Like"}
-        </button>
-        {canReply && onReply && (
-          <button onClick={onReply} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-            <Reply className="h-3.5 w-3.5" /> Reply
+      {editing ? (
+        <div className="mt-2 space-y-2">
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_LIMIT))}
+            rows={3}
+            maxLength={COMMENT_LIMIT}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">{draft.length}/{COMMENT_LIMIT} · Can only edit once</span>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { setEditing(false); setDraft(c.body); }}>Cancel</Button>
+              <Button size="sm" disabled={!draft.trim() || draft.trim() === c.body.trim()} onClick={async () => { await onEdit(draft); setEditing(false); }}>Save</Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
+      )}
+      {!editing && (
+        <div className="mt-2 flex items-center gap-3 text-xs">
+          <button onClick={onLike} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? "text-primary" : "text-muted-foreground"}`}>
+            <Heart className={`h-3.5 w-3.5 ${c.liked ? "fill-current" : ""}`} /> {c.likes > 0 ? c.likes : "Like"}
           </button>
-        )}
-      </div>
+          {canReply && onReply && (
+            <button onClick={onReply} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+              <Reply className="h-3.5 w-3.5" /> Reply
+            </button>
+          )}
+          {canEdit && (
+            <button onClick={() => { setDraft(c.body); setEditing(true); }} className="text-muted-foreground hover:text-primary">
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button onClick={() => onDelete()} className="text-muted-foreground hover:text-destructive">
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
 
 function Section({ id, label, body, media, intro, children }: { id?: string; label: string; body: string; media?: MediaItem[]; intro?: React.ReactNode; children?: React.ReactNode }) {
   const hasBody = !!body?.trim();

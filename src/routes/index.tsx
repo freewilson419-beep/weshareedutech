@@ -80,7 +80,8 @@ function PublicationHome() {
         .not("published_at", "is", null)
         .eq("is_unlisted", false)
         .order("published_at", { ascending: false })
-        .limit(60);
+        .limit(1000);
+
 
       if (!posts || posts.length === 0) {
         setLoading(false);
