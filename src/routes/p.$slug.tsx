@@ -582,15 +582,24 @@ function ArticleView() {
 }
 
 function CommentItem({
-  c, isAdmin, onLike, canReply, onReply,
+  c, isAdmin, currentUserId, viewerIsAdmin, onLike, canReply, onReply, onEdit, onDelete,
 }: {
   c: Comment;
   isAdmin: boolean;
+  currentUserId: string | null;
+  viewerIsAdmin: boolean;
   onLike: () => void;
   canReply: boolean;
   onReply?: () => void;
+  onEdit: (body: string) => void | Promise<void>;
+  onDelete: () => void | Promise<void>;
 }) {
   const name = displayName(c.author, false);
+  const isOwner = !!currentUserId && c.author_user_id === currentUserId;
+  const canEdit = isOwner && !c.edited_at;
+  const canDelete = isOwner || viewerIsAdmin;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(c.body);
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -605,23 +614,57 @@ function CommentItem({
             </p>
           )}
           <p className="text-sm font-medium">{name}</p>
-          <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(c.created_at).toLocaleString()}
+            {c.edited_at && <span className="ml-1 italic">(edited)</span>}
+          </p>
         </div>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
-      <div className="mt-2 flex items-center gap-3 text-xs">
-        <button onClick={onLike} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? "text-primary" : "text-muted-foreground"}`}>
-          <Heart className={`h-3.5 w-3.5 ${c.liked ? "fill-current" : ""}`} /> {c.likes > 0 ? c.likes : "Like"}
-        </button>
-        {canReply && onReply && (
-          <button onClick={onReply} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
-            <Reply className="h-3.5 w-3.5" /> Reply
+      {editing ? (
+        <div className="mt-2 space-y-2">
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_LIMIT))}
+            rows={3}
+            maxLength={COMMENT_LIMIT}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">{draft.length}/{COMMENT_LIMIT} · Can only edit once</span>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { setEditing(false); setDraft(c.body); }}>Cancel</Button>
+              <Button size="sm" disabled={!draft.trim() || draft.trim() === c.body.trim()} onClick={async () => { await onEdit(draft); setEditing(false); }}>Save</Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-2 whitespace-pre-wrap text-sm">{c.body}</p>
+      )}
+      {!editing && (
+        <div className="mt-2 flex items-center gap-3 text-xs">
+          <button onClick={onLike} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? "text-primary" : "text-muted-foreground"}`}>
+            <Heart className={`h-3.5 w-3.5 ${c.liked ? "fill-current" : ""}`} /> {c.likes > 0 ? c.likes : "Like"}
           </button>
-        )}
-      </div>
+          {canReply && onReply && (
+            <button onClick={onReply} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+              <Reply className="h-3.5 w-3.5" /> Reply
+            </button>
+          )}
+          {canEdit && (
+            <button onClick={() => { setDraft(c.body); setEditing(true); }} className="text-muted-foreground hover:text-primary">
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button onClick={() => onDelete()} className="text-muted-foreground hover:text-destructive">
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
 
 function Section({ id, label, body, media, intro, children }: { id?: string; label: string; body: string; media?: MediaItem[]; intro?: React.ReactNode; children?: React.ReactNode }) {
   const hasBody = !!body?.trim();
