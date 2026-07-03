@@ -109,6 +109,7 @@ export type Database = {
           author_user_id: string
           body: string
           created_at: string
+          edited_at: string | null
           id: string
           parent_id: string | null
           post_id: string
@@ -117,6 +118,7 @@ export type Database = {
           author_user_id: string
           body: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           parent_id?: string | null
           post_id: string
@@ -125,6 +127,7 @@ export type Database = {
           author_user_id?: string
           body?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           parent_id?: string | null
           post_id?: string
