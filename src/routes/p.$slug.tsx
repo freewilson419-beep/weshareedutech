@@ -273,7 +273,7 @@ function ArticleView() {
     const { data, error } = await supabase
       .from("comments")
       .insert({ post_id: post.id, author_user_id: user.id, body: t, parent_id: parentId })
-      .select("id,body,created_at,author_user_id,parent_id")
+      .select("id,body,created_at,edited_at,author_user_id,parent_id")
       .single();
     if (error) toast.error(error.message);
     else if (data) {
@@ -285,6 +285,34 @@ function ArticleView() {
     }
     setPosting(false);
   };
+
+  const isAdmin = !!user && adminIds.has(user.id);
+
+  const editComment = async (c: Comment, body: string) => {
+    if (!user) return;
+    const t = body.trim();
+    if (!t) return toast.error("Comment cannot be empty");
+    if (t.length > COMMENT_LIMIT) return toast.error(`Max ${COMMENT_LIMIT} characters`);
+    if (c.edited_at) return toast.error("Comments can only be edited once");
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("comments")
+      .update({ body: t, edited_at: now } as any)
+      .eq("id", c.id);
+    if (error) return toast.error(error.message);
+    setComments((cs) => cs.map((x) => x.id === c.id ? { ...x, body: t, edited_at: now } : x));
+    toast.success("Comment updated");
+  };
+
+  const deleteComment = async (c: Comment) => {
+    if (!user) return;
+    if (!confirm("Delete this comment? This cannot be undone.")) return;
+    const { error } = await supabase.from("comments").delete().eq("id", c.id);
+    if (error) return toast.error(error.message);
+    setComments((cs) => cs.filter((x) => x.id !== c.id && x.parent_id !== c.id));
+    toast.success("Comment deleted");
+  };
+
 
   const toggleCommentLike = async (c: Comment) => {
     if (!user) return toast.error("Sign in to like");
