@@ -159,7 +159,7 @@ function ArticleView() {
       const [{ data: a }, { data: clapRows }, { data: cmts }] = await Promise.all([
         supabase.from("profiles").select("user_id,username,title,surname,affiliation,department,avatar_url").eq("user_id", post.author_user_id).maybeSingle(),
         supabase.from("claps").select("user_id").eq("post_id", post.id),
-        supabase.from("comments").select("id,body,created_at,author_user_id,parent_id").eq("post_id", post.id).order("created_at", { ascending: true }),
+        supabase.from("comments").select("id,body,created_at,edited_at,author_user_id,parent_id").eq("post_id", post.id).order("created_at", { ascending: true }),
       ]);
       setAuthor(a as Author | null);
       if (user) setLiked(!!(clapRows ?? []).find((r) => r.user_id === user.id));
