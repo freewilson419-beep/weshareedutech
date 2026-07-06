@@ -31,14 +31,21 @@ export const adminGetOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const since7 = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const since24 = new Date(Date.now() - 86_400_000).toISOString();
 
-    const [users, posts, published, drafts, viewsRecent, claps, pCount, lCount, aCount, recent, topRows] = await Promise.all([
+    const [
+      users, posts, published, drafts, viewsRecent, claps,
+      pCount, lCount, aCount, recent, topRows,
+      commentsCount, bookmarksCount, pendingReports,
+      newUsers7d, newLessons7d, anonymousCount, activeUsers24h,
+      recentPublished, recentComments,
+    ] = await Promise.all([
       supabaseAdmin.from("profiles").select("user_id", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
       supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).is("published_at", null),
-      supabaseAdmin.from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since),
+      supabaseAdmin.from("lesson_views").select("id", { count: "exact", head: true }).gte("created_at", since7),
       supabaseAdmin.from("claps").select("count"),
       supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "participant"),
       supabaseAdmin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "lecturer"),
@@ -48,12 +55,29 @@ export const adminGetOverview = createServerFn({ method: "GET" })
         .select("user_id,title,surname,othernames,username,department,avatar_url,created_at")
         .order("created_at", { ascending: false })
         .limit(5),
-      // Use posts.view_count (trigger-maintained) for top lessons to avoid the 1k cap on lesson_views
       supabaseAdmin
         .from("posts")
         .select("id,title,slug,is_anonymous,author_user_id,view_count")
         .not("published_at", "is", null)
         .order("view_count", { ascending: false })
+        .limit(5),
+      supabaseAdmin.from("comments").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("bookmarks").select("post_id", { count: "exact", head: true }),
+      supabaseAdmin.from("content_reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabaseAdmin.from("profiles").select("user_id", { count: "exact", head: true }).gte("created_at", since7),
+      supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).gte("published_at", since7),
+      supabaseAdmin.from("posts").select("id", { count: "exact", head: true }).eq("is_anonymous", true).not("published_at", "is", null),
+      supabaseAdmin.from("lesson_views").select("user_id").gte("created_at", since24).not("user_id", "is", null).limit(5000),
+      supabaseAdmin
+        .from("posts")
+        .select("id,title,slug,published_at,author_user_id,is_anonymous")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(5),
+      supabaseAdmin
+        .from("comments")
+        .select("id,body,created_at,author_user_id,post_id")
+        .order("created_at", { ascending: false })
         .limit(5),
     ]);
 
@@ -65,6 +89,28 @@ export const adminGetOverview = createServerFn({ method: "GET" })
     } as Record<string, number>;
 
     const topLessons = (topRows.data ?? []).map((p: any) => ({ ...p, views: p.view_count ?? 0 }));
+    const activeUsersSet = new Set<string>();
+    for (const r of (activeUsers24h.data ?? []) as any[]) if (r.user_id) activeUsersSet.add(r.user_id);
+
+    // Hydrate author names for recent published + recent comments
+    const authorIds = new Set<string>();
+    for (const p of (recentPublished.data ?? []) as any[]) authorIds.add(p.author_user_id);
+    for (const c of (recentComments.data ?? []) as any[]) authorIds.add(c.author_user_id);
+    const { data: authorRows } = authorIds.size
+      ? await supabaseAdmin.from("profiles").select("user_id,username,title,surname,avatar_url").in("user_id", [...authorIds])
+      : { data: [] as any[] };
+    const authorMap = new Map<string, any>();
+    for (const a of (authorRows ?? []) as any[]) authorMap.set(a.user_id, a);
+
+    // Post title map for recent comments
+    const commentPostIds = [...new Set(((recentComments.data ?? []) as any[]).map((c) => c.post_id))];
+    const { data: postRows } = commentPostIds.length
+      ? await supabaseAdmin.from("posts").select("id,title,slug").in("id", commentPostIds)
+      : { data: [] as any[] };
+    const postMap = new Map<string, any>();
+    for (const p of (postRows ?? []) as any[]) postMap.set(p.id, p);
+
+    const avgViews = topLessons.length ? Math.round(topLessons.reduce((s, l: any) => s + (l.views || 0), 0) / topLessons.length) : 0;
 
     return {
       stats: {
@@ -74,10 +120,27 @@ export const adminGetOverview = createServerFn({ method: "GET" })
         drafts: drafts.count ?? 0,
         views7d: viewsRecent.count ?? 0,
         claps: totalClaps,
+        comments: commentsCount.count ?? 0,
+        bookmarks: bookmarksCount.count ?? 0,
+        pendingReports: pendingReports.count ?? 0,
+        newUsers7d: newUsers7d.count ?? 0,
+        newLessons7d: newLessons7d.count ?? 0,
+        anonymousLessons: anonymousCount.count ?? 0,
+        activeUsers24h: activeUsersSet.size,
+        avgViewsTop: avgViews,
       },
       roles: roleCounts,
       recent: recent.data ?? [],
       topLessons,
+      recentPublished: ((recentPublished.data ?? []) as any[]).map((p) => ({
+        ...p,
+        author: p.is_anonymous ? null : authorMap.get(p.author_user_id) ?? null,
+      })),
+      recentComments: ((recentComments.data ?? []) as any[]).map((c) => ({
+        ...c,
+        author: authorMap.get(c.author_user_id) ?? null,
+        post: postMap.get(c.post_id) ?? null,
+      })),
     };
   });
 

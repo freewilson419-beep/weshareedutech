@@ -145,7 +145,7 @@ function PublicationHome() {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search lessons, topics, or tags…"
+                  placeholder="Search by title, tag, publisher, or date…"
                   className="h-12 w-full rounded-full border border-input bg-card pl-12 pr-4 text-sm shadow-sm outline-none ring-primary/20 transition focus:ring-4 sm:h-14 sm:text-base"
                   aria-label="Search lessons"
                 />
@@ -163,11 +163,22 @@ function PublicationHome() {
             ) : (() => {
               const q = query.trim().toLowerCase();
               const filtered = q
-                ? items.filter((it) =>
-                    it.title.toLowerCase().includes(q) ||
-                    (it.excerpt ?? "").toLowerCase().includes(q) ||
-                    it.tags.some((t) => t.toLowerCase().includes(q))
-                  )
+                ? items.filter((it) => {
+                    const author = it.author;
+                    const authorName = it.is_anonymous
+                      ? "anonymous"
+                      : [author?.username, author?.title, author?.surname].filter(Boolean).join(" ").toLowerCase();
+                    const dateStr = new Date(it.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }).toLowerCase()
+                      + " " + new Date(it.published_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }).toLowerCase()
+                      + " " + new Date(it.published_at).toISOString().slice(0, 10);
+                    return (
+                      it.title.toLowerCase().includes(q) ||
+                      (it.excerpt ?? "").toLowerCase().includes(q) ||
+                      it.tags.some((t) => t.toLowerCase().includes(q)) ||
+                      authorName.includes(q) ||
+                      dateStr.includes(q)
+                    );
+                  })
                 : items;
               if (filtered.length === 0) {
                 return <p className="py-16 text-center text-sm text-muted-foreground">No lessons match “{query}”.</p>;

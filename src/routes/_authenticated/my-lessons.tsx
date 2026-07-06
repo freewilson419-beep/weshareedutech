@@ -29,12 +29,20 @@ function MyLessons() {
     })();
   }, [user]);
 
+  const hasDrafts = rows.some((r) => !r.published_at);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl">My lessons</h1>
         <Link to="/compose"><Button><PenLine className="h-4 w-4" /> New lesson</Button></Link>
       </div>
+
+      {hasDrafts && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+          ⏳ Drafts are automatically deleted 24 hours after their last edit. Publish or keep editing to preserve them.
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="rounded-md border border-dashed bg-card p-12 text-center text-muted-foreground">You haven't written anything yet.</div>
