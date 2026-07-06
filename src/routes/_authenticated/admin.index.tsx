@@ -23,11 +23,18 @@ function Overview() {
 
   const cards = [
     { label: "Total Users", value: data.stats.users, icon: Users, color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30" },
+    { label: "New Users (7d)", value: data.stats.newUsers7d, icon: UserPlus, color: "text-sky-600 bg-sky-100 dark:bg-sky-900/30" },
+    { label: "Active (24h)", value: data.stats.activeUsers24h, icon: Activity, color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30" },
     { label: "Lessons", value: data.stats.lessons, icon: BookOpen, color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30" },
     { label: "Published", value: data.stats.published, icon: CheckCircle2, color: "text-green-600 bg-green-100 dark:bg-green-900/30" },
     { label: "Drafts", value: data.stats.drafts, icon: FileText, color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30" },
+    { label: "New Lessons (7d)", value: data.stats.newLessons7d, icon: TrendingUp, color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30" },
+    { label: "Anonymous", value: data.stats.anonymousLessons, icon: EyeOff, color: "text-slate-600 bg-slate-100 dark:bg-slate-900/30" },
     { label: "Views (7d)", value: data.stats.views7d, icon: Eye, color: "text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30" },
     { label: "Total Claps", value: data.stats.claps, icon: Hand, color: "text-pink-600 bg-pink-100 dark:bg-pink-900/30" },
+    { label: "Comments", value: data.stats.comments, icon: MessageSquare, color: "text-amber-600 bg-amber-100 dark:bg-amber-900/30" },
+    { label: "Bookmarks", value: data.stats.bookmarks, icon: Bookmark, color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30" },
+    { label: "Pending Reports", value: data.stats.pendingReports, icon: Flag, color: "text-red-600 bg-red-100 dark:bg-red-900/30" },
   ];
 
   return (
