@@ -101,18 +101,80 @@ function Overview() {
 
       <Card>
         <CardContent className="p-5">
-          <h3 className="mb-3 text-sm font-medium">Top lessons this week</h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-medium">Top lessons this week</h3>
+            <Link to="/admin/lessons" className="text-xs text-primary hover:underline">View all</Link>
+          </div>
           <div className="space-y-2">
             {data.topLessons.length === 0 && <p className="text-sm text-muted-foreground">No views yet this week.</p>}
             {data.topLessons.map((l: any) => (
               <div key={l.id} className="flex items-center justify-between rounded-md p-2 hover:bg-muted/40">
-                <p className="truncate text-sm font-medium">{l.title}</p>
+                <Link to="/p/$slug" params={{ slug: l.slug }} className="truncate text-sm font-medium hover:text-primary">{l.title}</Link>
                 <span className="ml-3 inline-flex items-center gap-1 text-xs text-muted-foreground"><Eye className="h-3 w-3" /> {l.views}</span>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-medium">Recently published</h3>
+              <Link to="/admin/lessons" className="text-xs text-primary hover:underline">Manage</Link>
+            </div>
+            <div className="space-y-2">
+              {(!data.recentPublished || data.recentPublished.length === 0) && (
+                <p className="text-sm text-muted-foreground">Nothing published yet.</p>
+              )}
+              {data.recentPublished?.map((p: any) => {
+                const name = p.is_anonymous ? "Anonymous" : authorName(p.author, false);
+                return (
+                  <div key={p.id} className="rounded-md p-2 hover:bg-muted/40">
+                    <Link to="/p/$slug" params={{ slug: p.slug }} className="line-clamp-1 text-sm font-medium hover:text-primary">{p.title}</Link>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {name} · {formatDistanceToNow(new Date(p.published_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-medium">Recent comments</h3>
+              <Link to="/admin/reports" className="text-xs text-primary hover:underline">Reports</Link>
+            </div>
+            <div className="space-y-2">
+              {(!data.recentComments || data.recentComments.length === 0) && (
+                <p className="text-sm text-muted-foreground">No comments yet.</p>
+              )}
+              {data.recentComments?.map((c: any) => {
+                const name = authorName(c.author, false);
+                return (
+                  <div key={c.id} className="rounded-md p-2 hover:bg-muted/40">
+                    <p className="line-clamp-2 text-sm">{c.body}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {name}
+                      {c.post && (
+                        <>
+                          {" on "}
+                          <Link to="/p/$slug" params={{ slug: c.post.slug }} className="hover:text-primary hover:underline">{c.post.title}</Link>
+                        </>
+                      )}
+                      {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
