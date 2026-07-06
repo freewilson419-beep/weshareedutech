@@ -145,7 +145,7 @@ function PublicationHome() {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search lessons, topics, or tags…"
+                  placeholder="Search by title, tag, publisher, or date…"
                   className="h-12 w-full rounded-full border border-input bg-card pl-12 pr-4 text-sm shadow-sm outline-none ring-primary/20 transition focus:ring-4 sm:h-14 sm:text-base"
                   aria-label="Search lessons"
                 />
