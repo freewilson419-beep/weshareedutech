@@ -5,9 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCcw, Users, BookOpen, FileText, Eye, Hand, CheckCircle2 } from "lucide-react";
+import { Loader2, RefreshCcw, Users, BookOpen, FileText, Eye, Hand, CheckCircle2, MessageSquare, Bookmark, Flag, UserPlus, EyeOff, Activity, TrendingUp } from "lucide-react";
 import { adminGetOverview } from "@/lib/admin.functions";
 import { authorName, initialsFor } from "@/lib/author-display";
+import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
