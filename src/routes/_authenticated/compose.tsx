@@ -151,7 +151,8 @@ function Compose() {
       setPostId(data.id);
       savedSlug = data.slug;
     }
-    toast.success(publish ? (isUnlisted ? "Published as private link" : "Published!") : "Draft saved");
+    if (publish) toast.success(isUnlisted ? "Published as private link" : "Published!");
+    else toast.warning("Draft saved — heads up: unpublished drafts are automatically deleted after 24 hours.", { duration: 6000 });
     if (publish) {
       if (isUnlisted && savedSlug) {
         setPublishedSlug(savedSlug);
