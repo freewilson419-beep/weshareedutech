@@ -110,7 +110,7 @@ export const adminGetOverview = createServerFn({ method: "GET" })
     const postMap = new Map<string, any>();
     for (const p of (postRows ?? []) as any[]) postMap.set(p.id, p);
 
-    const avgViews = (published.count ?? 0) > 0 ? Math.round(((posts.data ? 0 : 0)) + ((topLessons.reduce((s, l: any) => s + (l.views || 0), 0)) / Math.max(1, topLessons.length))) : 0;
+    const avgViews = topLessons.length ? Math.round(topLessons.reduce((s, l: any) => s + (l.views || 0), 0) / topLessons.length) : 0;
 
     return {
       stats: {
