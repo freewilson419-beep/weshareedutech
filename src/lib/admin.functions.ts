@@ -413,7 +413,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       }));
     }
 
-    return { id: ann.id, recipients: notifRows.length, emailsQueued };
+    return { id: ann.id, recipients: notifRows.length, emailsQueued, pushSent };
   });
 
 export const adminUpdateAnnouncement = createServerFn({ method: "POST" })
