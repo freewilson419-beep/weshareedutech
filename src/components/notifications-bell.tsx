@@ -54,26 +54,56 @@ async function registerPush(getKey: () => Promise<{ key: string }>, saveSub: (a:
 export function NotificationsBell() {
   const { user } = useAuth();
   const [items, setItems] = useState<Notif[]>([]);
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
+  const [enabling, setEnabling] = useState(false);
   const firstLoadRef = useRef(true);
   const getKey = useServerFn(getVapidPublicKey);
   const saveSub = useServerFn(savePushSubscription);
 
-  // Ask for browser notification permission ONCE per session, then register push.
+  const inIframe = (() => { try { return typeof window !== "undefined" && window.self !== window.top; } catch { return true; } })();
+
   useEffect(() => {
-    if (!user) return;
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    const tryRegister = () => { registerPush(getKey, saveSub).catch(() => {}); };
-    if (Notification.permission === "granted") {
-      tryRegister();
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) { setPerm("unsupported"); return; }
+    setPerm(Notification.permission);
+  }, []);
+
+  // Auto-attempt subscription if already granted (no prompt).
+  useEffect(() => {
+    if (!user || perm !== "granted" || inIframe) return;
+    registerPush(getKey, saveSub).catch(() => {});
+  }, [user, perm, inIframe, getKey, saveSub]);
+
+  const enableNotifications = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      toast.error("Your browser doesn't support notifications");
       return;
     }
-    if (Notification.permission === "default") {
-      const t = setTimeout(() => {
-        Notification.requestPermission().then((p) => { if (p === "granted") tryRegister(); }).catch(() => {});
-      }, 1500);
-      return () => clearTimeout(t);
+    if (inIframe) {
+      toast.error("Open the live site to enable notifications", {
+        description: "Browser push doesn't work inside the editor preview.",
+      });
+      return;
     }
-  }, [user, getKey, saveSub]);
+    setEnabling(true);
+    try {
+      let p = Notification.permission;
+      if (p === "default") p = await Notification.requestPermission();
+      setPerm(p);
+      if (p !== "granted") {
+        toast.error("Notifications blocked", {
+          description: "Enable notifications for this site in your browser settings.",
+        });
+        return;
+      }
+      await registerPush(getKey, saveSub);
+      toast.success("Browser notifications enabled");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not enable notifications");
+    } finally {
+      setEnabling(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -118,6 +148,8 @@ export function NotificationsBell() {
     await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
   };
 
+  const showEnableBanner = perm !== "granted" && perm !== "unsupported";
+
   return (
     <Popover onOpenChange={(o) => o && markReadOnOpen()}>
       <PopoverTrigger asChild>
@@ -128,6 +160,20 @@ export function NotificationsBell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <div className="border-b p-3 font-semibold">Notifications</div>
+        {showEnableBanner && (
+          <div className="border-b bg-accent/50 p-3 text-sm">
+            <p className="mb-2 text-muted-foreground">
+              {perm === "denied"
+                ? "Notifications are blocked. Enable them in your browser's site settings, then reload."
+                : "Get alerts even when the tab is closed."}
+            </p>
+            {perm !== "denied" && (
+              <Button size="sm" onClick={enableNotifications} disabled={enabling}>
+                {enabling ? "Enabling…" : "Enable browser notifications"}
+              </Button>
+            )}
+          </div>
+        )}
         <div className="max-h-80 overflow-y-auto">
           {items.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">You're all caught up</p>
