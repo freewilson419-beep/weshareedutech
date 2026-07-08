@@ -34,7 +34,7 @@ async function sendOne(sub: SubRow, payload: PushPayload, vapid: NonNullable<Ret
   const res = await fetch(sub.endpoint, {
     method: built.method,
     headers: built.headers,
-    body: built.body,
+    body: built.body as unknown as BodyInit,
   });
   if (res.status === 404 || res.status === 410) {
     // Subscription expired; remove.
