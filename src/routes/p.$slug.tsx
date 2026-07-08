@@ -400,7 +400,7 @@ function ArticleView() {
         </div>
 
         {post.cover_image_url && (
-          <img src={post.cover_image_url} alt="" className="mt-8 aspect-[16/9] w-full rounded-md object-cover sm:mt-10" />
+          <img src={post.cover_image_url} alt={post.title} loading="eager" fetchPriority="high" decoding="async" className="mt-8 aspect-[16/9] w-full rounded-md object-cover sm:mt-10" />
         )}
 
         {post.download_url && (
