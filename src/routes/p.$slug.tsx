@@ -91,12 +91,26 @@ export const Route = createFileRoute("/p/$slug")({
             type: "application/ld+json",
             children: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Article",
-              headline: loaderData.seo.title,
-              description: loaderData.seo.excerpt || undefined,
-              image: image || undefined,
-              datePublished: loaderData.seo.published_at || undefined,
-              url,
+              "@graph": [
+                {
+                  "@type": "Article",
+                  headline: loaderData.seo.title,
+                  description: loaderData.seo.excerpt || undefined,
+                  image: image || undefined,
+                  datePublished: loaderData.seo.published_at || undefined,
+                  dateModified: loaderData.seo.published_at || undefined,
+                  mainEntityOfPage: { "@type": "WebPage", "@id": url },
+                  publisher: { "@id": "https://weshareeduteach.name.ng/#org" },
+                  url,
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "Home", item: "https://weshareeduteach.name.ng/" },
+                    { "@type": "ListItem", position: 2, name: loaderData.seo.title, item: url },
+                  ],
+                },
+              ],
             }),
           },
         ]
