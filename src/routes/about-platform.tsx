@@ -11,6 +11,8 @@ export const Route = createFileRoute("/about-platform")({
       { name: "description", content: "Learn what WeShare EduTech is about — a community publication where participants share structured lessons everyone can read freely." },
       { property: "og:title", content: "About this Platform — WeShare EduTech" },
       { property: "og:description", content: "Learn what WeShare EduTech is about — a community publication where participants share structured lessons everyone can read freely." },
+      { property: "og:url", content: "https://weshareeduteach.name.ng/about-platform" },
+      { property: "og:type", content: "website" },
     ],
     links: [{ rel: "canonical", href: "https://weshareeduteach.name.ng/about-platform" }],
   }),
