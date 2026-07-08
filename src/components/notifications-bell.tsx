@@ -6,23 +6,74 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeHref } from "@/lib/safe-url";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { getVapidPublicKey, savePushSubscription } from "@/lib/push.functions";
 
 interface Notif { id: string; title: string; body: string; link: string; is_read: boolean; created_at: string; }
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+async function registerPush(getKey: () => Promise<{ key: string }>, saveSub: (a: any) => Promise<any>) {
+  if (typeof window === "undefined") return;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  // Don't try in cross-origin iframe previews (Lovable editor)
+  try { if (window.self !== window.top) return; } catch { return; }
+  if (Notification.permission !== "granted") return;
+
+  const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  await navigator.serviceWorker.ready;
+
+  const { key } = await getKey();
+  if (!key) return;
+  const existing = await reg.pushManager.getSubscription();
+  if (existing) {
+    // Ensure it's saved on the server (idempotent)
+    const j = existing.toJSON() as any;
+    if (j?.endpoint && j?.keys?.p256dh && j?.keys?.auth) {
+      await saveSub({ data: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } } }).catch(() => {});
+    }
+    return;
+  }
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(key),
+  });
+  const j = sub.toJSON() as any;
+  if (j?.endpoint && j?.keys?.p256dh && j?.keys?.auth) {
+    await saveSub({ data: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } } });
+  }
+}
 
 export function NotificationsBell() {
   const { user } = useAuth();
   const [items, setItems] = useState<Notif[]>([]);
   const firstLoadRef = useRef(true);
+  const getKey = useServerFn(getVapidPublicKey);
+  const saveSub = useServerFn(savePushSubscription);
 
-  // Ask for browser notification permission ONCE per session.
+  // Ask for browser notification permission ONCE per session, then register push.
   useEffect(() => {
+    if (!user) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
+    const tryRegister = () => { registerPush(getKey, saveSub).catch(() => {}); };
+    if (Notification.permission === "granted") {
+      tryRegister();
+      return;
+    }
     if (Notification.permission === "default") {
-      // Defer slightly so it doesn't fire during hydration
-      const t = setTimeout(() => { Notification.requestPermission().catch(() => {}); }, 1500);
+      const t = setTimeout(() => {
+        Notification.requestPermission().then((p) => { if (p === "granted") tryRegister(); }).catch(() => {});
+      }, 1500);
       return () => clearTimeout(t);
     }
-  }, []);
+  }, [user, getKey, saveSub]);
 
   useEffect(() => {
     if (!user) return;
@@ -34,9 +85,7 @@ export function NotificationsBell() {
     load();
 
     const showAlert = (n: Notif) => {
-      // In-app toast (always works)
       toast(n.title, { description: n.body || undefined });
-      // Browser notification (works when tab is in background too)
       try {
         if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
           const notif = new Notification(n.title, { body: n.body || "", tag: n.id, icon: "/favicon.ico" });
@@ -62,7 +111,6 @@ export function NotificationsBell() {
 
   const unread = items.filter((n) => !n.is_read).length;
 
-  // When the user opens the bell, mark unread items as read (but keep them visible).
   const markReadOnOpen = async () => {
     const unreadIds = items.filter((n) => !n.is_read).map((n) => n.id);
     if (unreadIds.length === 0) return;

@@ -319,6 +319,23 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
         await supabaseAdmin.from("notifications").insert(notifRows.slice(i, i + 500));
       }
     }
+
+    // Fire browser push notifications (works even when tab is closed).
+    let pushSent = 0;
+    try {
+      const { pushToUsers } = await import("@/lib/push-send.server");
+      const targetIds = targets ?? allUsers.map((u: any) => u.user_id);
+      const r = await pushToUsers(targetIds, {
+        title: data.title,
+        body: data.body,
+        url: ctaUrl,
+        image: imageUrl || undefined,
+        tag: `announcement-${ann.id}`,
+      });
+      pushSent = r.sent;
+    } catch (e) {
+      console.error("[push] broadcast failed:", e);
+    }
     // Determine whether to send email: explicit param wins; otherwise honor global setting.
     let shouldEmail = data.sendEmail;
     if (shouldEmail === undefined) {
@@ -327,7 +344,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       shouldEmail = (s?.value ?? "true") === "true";
     }
     if (!shouldEmail) {
-      return { id: ann.id, recipients: notifRows.length, emailsQueued: 0 };
+      return { id: ann.id, recipients: notifRows.length, emailsQueued: 0, pushSent };
     }
 
 
@@ -396,7 +413,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       }));
     }
 
-    return { id: ann.id, recipients: notifRows.length, emailsQueued };
+    return { id: ann.id, recipients: notifRows.length, emailsQueued, pushSent };
   });
 
 export const adminUpdateAnnouncement = createServerFn({ method: "POST" })

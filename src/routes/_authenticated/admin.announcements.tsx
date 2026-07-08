@@ -115,7 +115,7 @@ function AdminAnnouncements() {
         ctaUrl: form.ctaUrl || undefined,
         sendEmail,
       } });
-      toast.success(`Sent to ${r.recipients} users${sendEmail ? ` · ${r.emailsQueued} email(s) queued` : " (in-app only)"}`);
+      toast.success(`Sent to ${r.recipients} users · ${r.pushSent ?? 0} browser push${sendEmail ? ` · ${r.emailsQueued} email(s) queued` : ""}`);
       setForm(empty);
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
     } catch (e: any) { toast.error(e.message); }
