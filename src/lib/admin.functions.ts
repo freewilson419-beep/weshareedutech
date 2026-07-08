@@ -344,7 +344,7 @@ export const adminBroadcastAnnouncement = createServerFn({ method: "POST" })
       shouldEmail = (s?.value ?? "true") === "true";
     }
     if (!shouldEmail) {
-      return { id: ann.id, recipients: notifRows.length, emailsQueued: 0 };
+      return { id: ann.id, recipients: notifRows.length, emailsQueued: 0, pushSent };
     }
 
 
