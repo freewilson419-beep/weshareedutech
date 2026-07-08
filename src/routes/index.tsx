@@ -51,6 +51,8 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "A community learning publication where participants publish structured lessons that everyone can read freely." },
       { property: "og:url", content: "https://weshareeduteach.name.ng/" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ArkqO01EgHYevtlIDZrSdctg1NI2/social-images/social-1778912339733-20260516_042731_0000.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ArkqO01EgHYevtlIDZrSdctg1NI2/social-images/social-1778912339733-20260516_042731_0000.webp" },
     ],
     links: [{ rel: "canonical", href: "https://weshareeduteach.name.ng/" }],
   }),
