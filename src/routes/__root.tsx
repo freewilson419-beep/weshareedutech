@@ -74,19 +74,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "WeShare EduTech — Learn & Share" },
-      { name: "description", content: "WeShare EduTeach is a learning publication where participants read structured lessons freely and sign in to publish, comment, clap and bookmark." },
-      { property: "og:title", content: "WeShare EduTech — Learn & Share" },
-      { name: "twitter:title", content: "WeShare EduTech — Learn & Share" },
-      { property: "og:description", content: "WeShare EduTeach is a learning publication where participants read structured lessons freely and sign in to publish, comment, clap and bookmark." },
-      { name: "twitter:description", content: "WeShare EduTeach is a learning publication where participants read structured lessons freely and sign in to publish, comment, clap and bookmark." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ArkqO01EgHYevtlIDZrSdctg1NI2/social-images/social-1778912339733-20260516_042731_0000.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ArkqO01EgHYevtlIDZrSdctg1NI2/social-images/social-1778912339733-20260516_042731_0000.webp" },
+      { name: "description", content: "WeShare EduTech is a learning publication where participants read structured lessons freely and sign in to publish, comment, clap and bookmark." },
+      { name: "theme-color", content: "#ffffff" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:site", content: "@WeShareEduTech" },
+      { property: "og:site_name", content: "WeShare EduTech" },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "en_US" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://weshareeduteach.name.ng/#org",
+              name: "WeShare EduTech",
+              url: "https://weshareeduteach.name.ng",
+              logo: "https://weshareeduteach.name.ng/favicon.ico",
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://weshareeduteach.name.ng/#website",
+              url: "https://weshareeduteach.name.ng",
+              name: "WeShare EduTech",
+              publisher: { "@id": "https://weshareeduteach.name.ng/#org" },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://weshareeduteach.name.ng/?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
+            },
+          ],
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

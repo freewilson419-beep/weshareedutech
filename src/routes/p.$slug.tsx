@@ -91,12 +91,26 @@ export const Route = createFileRoute("/p/$slug")({
             type: "application/ld+json",
             children: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Article",
-              headline: loaderData.seo.title,
-              description: loaderData.seo.excerpt || undefined,
-              image: image || undefined,
-              datePublished: loaderData.seo.published_at || undefined,
-              url,
+              "@graph": [
+                {
+                  "@type": "Article",
+                  headline: loaderData.seo.title,
+                  description: loaderData.seo.excerpt || undefined,
+                  image: image || undefined,
+                  datePublished: loaderData.seo.published_at || undefined,
+                  dateModified: loaderData.seo.published_at || undefined,
+                  mainEntityOfPage: { "@type": "WebPage", "@id": url },
+                  publisher: { "@id": "https://weshareeduteach.name.ng/#org" },
+                  url,
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "Home", item: "https://weshareeduteach.name.ng/" },
+                    { "@type": "ListItem", position: 2, name: loaderData.seo.title, item: url },
+                  ],
+                },
+              ],
             }),
           },
         ]
@@ -386,7 +400,7 @@ function ArticleView() {
         </div>
 
         {post.cover_image_url && (
-          <img src={post.cover_image_url} alt="" className="mt-8 aspect-[16/9] w-full rounded-md object-cover sm:mt-10" />
+          <img src={post.cover_image_url} alt={post.title} loading="eager" fetchPriority="high" decoding="async" className="mt-8 aspect-[16/9] w-full rounded-md object-cover sm:mt-10" />
         )}
 
         {post.download_url && (
