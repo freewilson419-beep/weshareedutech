@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy } from "lucide-react";
+import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy, Share2, PartyPopper, ExternalLink } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -50,6 +51,7 @@ function Compose() {
   const [isUnlisted, setIsUnlisted] = useState(false);
   const [aiGrading, setAiGrading] = useState(true);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
+  const [successOpen, setSuccessOpen] = useState(false);
   const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
     intro: [], body: [], conclusion: [], reflection: [], learn_to_teach: [],
   });
@@ -151,15 +153,27 @@ function Compose() {
       setPostId(data.id);
       savedSlug = data.slug;
     }
-    if (publish) toast.success(isUnlisted ? "Published as private link" : "Published!");
-    else toast.warning("Draft saved — heads up: unpublished drafts are automatically deleted after 24 hours.", { duration: 6000 });
-    if (publish) {
-      if (isUnlisted && savedSlug) {
-        setPublishedSlug(savedSlug);
-      } else {
-        nav({ to: "/dashboard" });
-      }
+    if (!publish) {
+      toast.warning("Draft saved — heads up: unpublished drafts are automatically deleted after 24 hours.", { duration: 6000 });
+    } else if (savedSlug) {
+      setPublishedSlug(savedSlug);
+      setSuccessOpen(true);
     }
+  };
+
+  const shareTitle = form.title.trim() || "my new lesson";
+  const shareText = `Check out my new lesson "${shareTitle}" on WeShare EduTech — learn something new today!`;
+  const doCopy = async () => {
+    try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied"); }
+    catch { toast.error("Couldn't copy"); }
+  };
+  const doShare = async () => {
+    const payload = { title: shareTitle, text: shareText, url: shareUrl };
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
+      try { await (navigator as any).share(payload); return; } catch { /* cancelled */ }
+    }
+    const wa = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+    window.open(wa, "_blank", "noopener,noreferrer");
   };
 
   const shareUrl = publishedSlug ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${publishedSlug}` : "";
@@ -341,9 +355,79 @@ function Compose() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={successOpen} onOpenChange={(o) => { setSuccessOpen(o); if (!o) nav({ to: "/dashboard" }); }}>
+        <DialogContent className="overflow-hidden sm:max-w-md">
+          <ConfettiBurst />
+          <DialogHeader className="items-center text-center">
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <PartyPopper className="h-7 w-7" />
+            </div>
+            <DialogTitle className="font-serif text-2xl">
+              {isUnlisted ? "Published as a private link!" : "Your lesson is live!"}
+            </DialogTitle>
+            <DialogDescription>
+              {isUnlisted
+                ? "Only people with this link can read it. Share it with the right audience."
+                : "Nicely done. Share it so more learners can find your lesson."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-3">
+            <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-2">
+              <Input readOnly value={shareUrl} className="h-9 border-0 bg-transparent text-xs focus-visible:ring-0" />
+              <Button size="sm" variant="secondary" onClick={doCopy}><Copy className="h-4 w-4" /> Copy</Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={doShare}><Share2 className="h-4 w-4" /> Share</Button>
+              <Button variant="outline" onClick={() => publishedSlug && window.open(`/p/${publishedSlug}`, "_blank")}>
+                <ExternalLink className="h-4 w-4" /> View lesson
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-2 sm:justify-center">
+            <Button variant="ghost" onClick={() => { setSuccessOpen(false); nav({ to: "/dashboard" }); }}>
+              Go to dashboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+function ConfettiBurst() {
+  const colors = ["#f43f5e", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899"];
+  const pieces = Array.from({ length: 40 });
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {pieces.map((_, i) => {
+        const left = Math.random() * 100;
+        const dx = (Math.random() - 0.5) * 200;
+        const delay = Math.random() * 0.4;
+        const dur = 1.8 + Math.random() * 1.4;
+        const color = colors[i % colors.length];
+        const rot = Math.random() * 360;
+        return (
+          <span
+            key={i}
+            className="confetti-piece"
+            style={{
+              left: `${left}%`,
+              backgroundColor: color,
+              transform: `rotate(${rot}deg)`,
+              animationDelay: `${delay}s`,
+              animationDuration: `${dur}s`,
+              ["--dx" as any]: `${dx}px`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 
 function SectionBlock({
   label, value, onText, rows, userId, media, setMedia,
