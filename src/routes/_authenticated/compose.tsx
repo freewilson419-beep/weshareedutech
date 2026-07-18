@@ -170,10 +170,19 @@ function Compose() {
   const doShare = async () => {
     const payload = { title: shareTitle, text: shareText, url: shareUrl };
     if (typeof navigator !== "undefined" && (navigator as any).share) {
-      try { await (navigator as any).share(payload); return; } catch { /* cancelled */ }
+      try {
+        await (navigator as any).share(payload);
+        return;
+      } catch (err) {
+        // User cancelled the share sheet — no toast needed
+        if ((err as DOMException)?.name === "AbortError") return;
+        toast.error("Could not open share sheet");
+        return;
+      }
     }
-    const wa = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
-    window.open(wa, "_blank", "noopener,noreferrer");
+    toast.info("Sharing isn't available on this device — copy the link instead");
+    try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied"); }
+    catch { toast.error("Couldn't copy link"); }
   };
 
   const shareUrl = publishedSlug ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${publishedSlug}` : "";
