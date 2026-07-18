@@ -51,6 +51,7 @@ function Compose() {
   const [isUnlisted, setIsUnlisted] = useState(false);
   const [aiGrading, setAiGrading] = useState(true);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
+  const [successOpen, setSuccessOpen] = useState(false);
   const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
     intro: [], body: [], conclusion: [], reflection: [], learn_to_teach: [],
   });
