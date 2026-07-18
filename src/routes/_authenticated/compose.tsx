@@ -153,15 +153,27 @@ function Compose() {
       setPostId(data.id);
       savedSlug = data.slug;
     }
-    if (publish) toast.success(isUnlisted ? "Published as private link" : "Published!");
-    else toast.warning("Draft saved — heads up: unpublished drafts are automatically deleted after 24 hours.", { duration: 6000 });
-    if (publish) {
-      if (isUnlisted && savedSlug) {
-        setPublishedSlug(savedSlug);
-      } else {
-        nav({ to: "/dashboard" });
-      }
+    if (!publish) {
+      toast.warning("Draft saved — heads up: unpublished drafts are automatically deleted after 24 hours.", { duration: 6000 });
+    } else if (savedSlug) {
+      setPublishedSlug(savedSlug);
+      setSuccessOpen(true);
     }
+  };
+
+  const shareTitle = form.title.trim() || "my new lesson";
+  const shareText = `Check out my new lesson "${shareTitle}" on WeShare EduTech — learn something new today!`;
+  const doCopy = async () => {
+    try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied"); }
+    catch { toast.error("Couldn't copy"); }
+  };
+  const doShare = async () => {
+    const payload = { title: shareTitle, text: shareText, url: shareUrl };
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
+      try { await (navigator as any).share(payload); return; } catch { /* cancelled */ }
+    }
+    const wa = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+    window.open(wa, "_blank", "noopener,noreferrer");
   };
 
   const shareUrl = publishedSlug ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${publishedSlug}` : "";
