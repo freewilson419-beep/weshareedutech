@@ -388,7 +388,7 @@ function Compose() {
               <Button size="sm" variant="secondary" onClick={doCopy}><Copy className="h-4 w-4" /> Copy</Button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={doShare}><Share2 className="h-4 w-4" /> Share</Button>
+              <Button onClick={doShare} disabled={!shareUrl}><Share2 className="h-4 w-4" /> Share</Button>
               <Button variant="outline" onClick={() => publishedSlug && window.open(`/p/${publishedSlug}`, "_blank")}>
                 <ExternalLink className="h-4 w-4" /> View lesson
               </Button>
