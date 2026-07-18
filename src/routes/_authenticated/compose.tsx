@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy } from "lucide-react";
+import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy, Share2, PartyPopper, ExternalLink } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
