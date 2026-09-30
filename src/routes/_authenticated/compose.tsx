@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/compose")({
-  validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) || undefined }),
+  validateSearch: (s: Record<string, unknown>) => (s.id ? { id: String(s.id) } : {}),
   component: Compose,
 });
 
