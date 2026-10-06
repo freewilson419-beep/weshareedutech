@@ -337,6 +337,7 @@ export function VoiceRecorder({ postId, authorUserId, onSubmitted }: { postId: s
     }
     setProgress(100);
     toast.success("Recording submitted");
+    onSubmitted?.();
     discard();
     setUploading(false);
     setProgress(0);
