@@ -10,6 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ImagePlus, Loader2, Save, Send, X, EyeOff, Link as LinkIcon, Copy, Share2, PartyPopper, ExternalLink } from "lucide-react";
 import { MediaManager, type MediaItem } from "@/components/media-manager";
+import { QuestionBankEditor, isValidQ, PER_GATE, MAX_BANK, type GateQuestions, type GateKey } from "@/components/lesson-gates";
+import type { Json } from "@/integrations/supabase/types";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -50,6 +52,8 @@ function Compose() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isUnlisted, setIsUnlisted] = useState(false);
   const [aiGrading, setAiGrading] = useState(true);
+  const [requireTeaching, setRequireTeaching] = useState(true);
+  const [gates, setGates] = useState<GateQuestions>({});
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
   const [media, setMedia] = useState<Record<SectionKey, MediaItem[]>>({
@@ -75,6 +79,8 @@ function Compose() {
           setIsAnonymous(!!data.is_anonymous);
           setIsUnlisted(!!data.is_unlisted);
           setAiGrading((data as any).ai_grading_enabled !== false);
+          setRequireTeaching(data.require_teaching !== false);
+          setGates((data.gate_questions ?? {}) as unknown as GateQuestions);
           if (data.is_unlisted && data.published_at) setPublishedSlug(data.slug);
           const sm = (data.section_media ?? {}) as Partial<Record<SectionKey, MediaItem[]>>;
           setMedia({
@@ -129,6 +135,8 @@ function Compose() {
       is_anonymous: isAnonymous,
       is_unlisted: isUnlisted,
       ai_grading_enabled: aiGrading,
+      require_teaching: requireTeaching,
+      gate_questions: (requireTeaching ? { ...gates, conclusion: [] } : gates) as unknown as Json,
     };
   };
 
@@ -139,6 +147,17 @@ function Compose() {
     if (!urlOk(form.quiz_url.trim())) return toast.error("Quiz URL must start with https://");
     if (!urlOk(form.download_url.trim())) return toast.error("Download URL must start with https://");
     if (!urlOk(form.reflection_form_url.trim())) return toast.error("Reflection form URL must start with https://");
+    if (publish) {
+      const checks: [GateKey, string][] = [["intro", "After Introduction"], ["body", "After Body"]];
+      if (!requireTeaching) checks.push(["conclusion", "Final questions"]);
+      for (const [k, name] of checks) {
+        const list = gates[k] ?? [];
+        if (k === "conclusion" && list.length < PER_GATE) return toast.error(`Add at least ${PER_GATE} final questions (students won't be teaching).`);
+        if (list.length > 0 && list.length < PER_GATE) return toast.error(`"${name}" needs at least ${PER_GATE} questions, or none.`);
+        const bad = list.findIndex((q) => !isValidQ(q));
+        if (bad >= 0) return toast.error(`"${name}" question ${bad + 1} is incomplete — fill the question and mark the correct answer.`);
+      }
+    }
     const base = buildPayload();
     const slug = slugify(form.title) + "-" + Math.random().toString(36).slice(2, 7);
     const publishedAt = publish ? new Date().toISOString() : null;
@@ -250,6 +269,27 @@ function Compose() {
         <SectionBlock label="Conclusion" value={form.conclusion_slide} onText={u("conclusion_slide")} rows={3} userId={user!.id} media={media.conclusion} setMedia={(m) => setMedia((s) => ({ ...s, conclusion: m }))} />
         <SectionBlock label="Reflection" value={form.reflection} onText={u("reflection")} rows={3} userId={user!.id} media={media.reflection} setMedia={(m) => setMedia((s) => ({ ...s, reflection: m }))} />
         <SectionBlock label="Learn to teach" value={form.learn_to_teach} onText={u("learn_to_teach")} rows={3} userId={user!.id} media={media.learn_to_teach} setMedia={(m) => setMedia((s) => ({ ...s, learn_to_teach: m }))} />
+      </CardContent></Card>
+
+      <Card><CardContent className="space-y-5 p-6">
+        <div>
+          <h2 className="font-serif text-xl">Checkpoints</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Students must answer {PER_GATE} random questions correctly before the next part opens. Add up to {MAX_BANK} per section — every student gets a different mix.</p>
+        </div>
+        <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+          <div>
+            <Label className="font-serif text-base">Do you want Participants/Users to teach?</Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {requireTeaching ? "Yes — students must submit a Learn-to-Teach voice note (at least 60 seconds) before the quiz." : "No — students answer your final questions before the quiz instead."}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 text-sm">No <Switch checked={requireTeaching} onCheckedChange={setRequireTeaching} /> Yes</div>
+        </div>
+        <QuestionBankEditor label="After Introduction" hint="Unlocks the Body." value={gates.intro ?? []} onChange={(v) => setGates((g) => ({ ...g, intro: v }))} />
+        <QuestionBankEditor label="After Body" hint="Unlocks the Conclusion." value={gates.body ?? []} onChange={(v) => setGates((g) => ({ ...g, body: v }))} />
+        {!requireTeaching && (
+          <QuestionBankEditor label="Final questions (after Conclusion)" hint="Required. Unlocks the quiz." value={gates.conclusion ?? []} onChange={(v) => setGates((g) => ({ ...g, conclusion: v }))} />
+        )}
       </CardContent></Card>
 
       <Card><CardContent className="space-y-3 p-6">

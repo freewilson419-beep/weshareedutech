@@ -447,6 +447,7 @@ export type Database = {
           created_at: string
           download_url: string
           excerpt: string
+          gate_questions: Json
           goal: string
           id: string
           intro_slide: string
@@ -459,6 +460,7 @@ export type Database = {
           read_time_minutes: number
           reflection: string
           reflection_form_url: string
+          require_teaching: boolean
           section_media: Json
           slug: string
           tags: string[]
@@ -476,6 +478,7 @@ export type Database = {
           created_at?: string
           download_url?: string
           excerpt?: string
+          gate_questions?: Json
           goal?: string
           id?: string
           intro_slide?: string
@@ -488,6 +491,7 @@ export type Database = {
           read_time_minutes?: number
           reflection?: string
           reflection_form_url?: string
+          require_teaching?: boolean
           section_media?: Json
           slug: string
           tags?: string[]
@@ -505,6 +509,7 @@ export type Database = {
           created_at?: string
           download_url?: string
           excerpt?: string
+          gate_questions?: Json
           goal?: string
           id?: string
           intro_slide?: string
@@ -517,6 +522,7 @@ export type Database = {
           read_time_minutes?: number
           reflection?: string
           reflection_form_url?: string
+          require_teaching?: boolean
           section_media?: Json
           slug?: string
           tags?: string[]

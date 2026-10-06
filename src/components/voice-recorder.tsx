@@ -92,7 +92,30 @@ async function compressAudio(file: Blob): Promise<{ blob: Blob; durationSec: num
   });
 }
 
-export function VoiceRecorder({ postId, authorUserId }: { postId: string; authorUserId?: string }) {
+const MIN_SECONDS = 60;
+
+// Returns share of 50ms windows that contain audible sound (0..1)
+async function voicedRatio(b: Blob): Promise<number> {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const buf = await ctx.decodeAudioData(await b.arrayBuffer());
+    void ctx.close();
+    const data = buf.getChannelData(0);
+    const win = Math.max(1, Math.floor(buf.sampleRate * 0.05));
+    let voiced = 0, total = 0;
+    for (let i = 0; i < data.length; i += win) {
+      let sum = 0;
+      const end = Math.min(data.length, i + win);
+      for (let j = i; j < end; j++) sum += data[j] * data[j];
+      if (Math.sqrt(sum / (end - i)) > 0.01) voiced++;
+      total++;
+    }
+    return total ? voiced / total : 0;
+  } catch { return 1; } // can't decode → don't block
+}
+
+export function VoiceRecorder({ postId, authorUserId, onSubmitted }: { postId: string; authorUserId?: string; onSubmitted?: () => void }) {
   const { user } = useAuth();
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -281,7 +304,15 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
 
   async function upload() {
     if (!blob || !user) return;
+    if (elapsed < MIN_SECONDS) {
+      return toast.error(`Recording too short (${elapsed}s). Please explain for at least ${MIN_SECONDS} seconds and record again.`);
+    }
     setUploading(true);
+    const ratio = await voicedRatio(blob);
+    if (ratio < 0.25) {
+      setUploading(false);
+      return toast.error("Your recording seems silent or too quiet. Please speak clearly and record again.");
+    }
     setProgress(20);
     const ext = blob.type.includes("mp4") ? "m4a" : "webm";
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -306,6 +337,7 @@ export function VoiceRecorder({ postId, authorUserId }: { postId: string; author
     }
     setProgress(100);
     toast.success("Recording submitted");
+    onSubmitted?.();
     discard();
     setUploading(false);
     setProgress(0);
