@@ -13,6 +13,7 @@ import { initialsFor } from "@/lib/author-display";
 import { ReportLessonButton } from "@/components/report-lesson-button";
 import { SiteFooter } from "@/components/site-footer";
 import { VoiceRecorder } from "@/components/voice-recorder";
+import { QuestionGate, PassedNote, useGateProgress, PER_GATE, type GateQuestions, type GateKey } from "@/components/lesson-gates";
 import { safeHref } from "@/lib/safe-url";
 
 interface Post {
@@ -38,6 +39,8 @@ interface Post {
   author_user_id: string;
   is_anonymous?: boolean;
   section_media?: Record<string, MediaItem[]>;
+  require_teaching?: boolean;
+  gate_questions?: unknown;
 }
 
 interface Author { user_id: string; username: string; title: string; surname: string; affiliation: string; department: string; avatar_url: string }
@@ -150,6 +153,15 @@ function ArticleView() {
   const [replyBody, setReplyBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [hasSubmittedVoice, setHasSubmittedVoice] = useState(false);
+  const { passed, pass } = useGateProgress(post?.id, user?.id);
+  const gq = (post?.gate_questions ?? {}) as GateQuestions;
+  const hasBank = (k: GateKey) => (gq[k]?.length ?? 0) >= PER_GATE;
+  const bypass = !!user && !!post && user.id === post.author_user_id;
+  const teaching = post?.require_teaching !== false;
+  const needIntro = !bypass && hasBank("intro") && !passed.intro;
+  const needBody = !needIntro && !bypass && hasBank("body") && !passed.body;
+  const needFinal = !teaching && !bypass && hasBank("conclusion") && !passed.conclusion;
+  const quizOpen = bypass || (!needIntro && !needBody && (teaching ? hasSubmittedVoice : !needFinal));
 
   useEffect(() => {
     (async () => {
@@ -412,10 +424,16 @@ function ArticleView() {
           </div>
         )}
 
-        <div className="prose-article mt-12 space-y-12 text-[1.075rem] leading-relaxed">
+        <div id="lesson-top" className="prose-article mt-12 scroll-mt-20 space-y-12 text-[1.075rem] leading-relaxed">
           <Section label="Goal" body={post.goal} />
           <Section label="Introduction" body={post.intro_slide} media={post.section_media?.intro} />
+          {needIntro ? <QuestionGate title="Check your understanding of the Introduction" bank={gq.intro!} onPass={() => pass("intro")} /> : null}
+          {!needIntro && (<>
+          {hasBank("intro") && !bypass && <PassedNote text="Introduction checkpoint passed" />}
           <Section label="Body" body={post.body_slide} media={post.section_media?.body} />
+          {needBody ? <QuestionGate title="Check your understanding of the Body" bank={gq.body!} onPass={() => pass("body")} /> : null}
+          {!needBody && (<>
+          {hasBank("body") && !bypass && <PassedNote text="Body checkpoint passed" />}
           <Section label="Conclusion" body={post.conclusion_slide} media={post.section_media?.conclusion} />
           <Section
             id="reflection"
@@ -451,7 +469,13 @@ function ArticleView() {
               ) : null
             }
           />
-          <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} /></div>
+          {teaching ? (
+            <div id="voice-submission" className="scroll-mt-20"><VoiceRecorder postId={post.id} authorUserId={post.author_user_id} onSubmitted={() => setHasSubmittedVoice(true)} /></div>
+          ) : needFinal ? (
+            <div id="voice-submission" className="scroll-mt-20"><QuestionGate title="Final checkpoint" bank={gq.conclusion!} onPass={() => pass("conclusion")} /></div>
+          ) : hasBank("conclusion") && !bypass ? <PassedNote text="Final checkpoint passed" /> : null}
+          </>)}
+          </>)}
         </div>
 
         {post.quiz_url && (
@@ -467,10 +491,10 @@ function ArticleView() {
                   <Button variant="outline">Sign in to take the quiz</Button>
                 </Link>
               </>
-            ) : hasSubmittedVoice ? (
+            ) : quizOpen ? (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Nice work — your Learn-to-Teach voice note is in. You're cleared to take the exam.
+                  {teaching ? "Nice work — your Learn-to-Teach voice note is in." : "Nice work — you've passed every checkpoint."} You're cleared to take the exam.
                 </p>
                 <a href={safeHref(post.quiz_url)} target="_blank" rel="noreferrer" className="mt-4 inline-flex">
                   <Button>Take the quiz <ExternalLink className="h-4 w-4" /></Button>
@@ -479,17 +503,17 @@ function ArticleView() {
             ) : (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  The exam unlocks once you've submitted your Learn-to-Teach voice recording above.
+                  {needIntro || needBody ? "Finish the lesson checkpoints above to unlock the exam." : teaching ? "The exam unlocks once you've submitted your Learn-to-Teach voice recording above." : "The exam unlocks once you pass the final checkpoint above."}
                 </p>
                 <Button
                   variant="outline"
                   className="mt-4"
                   onClick={() => {
-                    toast.info("Please record and submit your Learn-to-Teach voice note first.");
-                    document.getElementById("voice-submission")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    toast.info("Please complete the step above first.");
+                    document.getElementById(needIntro || needBody ? "lesson-top" : "voice-submission")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                 >
-                  Go to Learn-to-Teach
+                  Go to the next step
                 </Button>
               </>
             )}
