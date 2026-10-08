@@ -13,6 +13,7 @@ import { initialsFor } from "@/lib/author-display";
 import { ReportLessonButton } from "@/components/report-lesson-button";
 import { SiteFooter } from "@/components/site-footer";
 import { VoiceRecorder } from "@/components/voice-recorder";
+import { QuestionGate, PassedNote, useGateProgress, PER_GATE, type GateQuestions, type GateKey } from "@/components/lesson-gates";
 import { safeHref } from "@/lib/safe-url";
 
 interface Post {
